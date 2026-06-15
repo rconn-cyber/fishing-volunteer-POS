@@ -1,8 +1,16 @@
+/**
+ * get-registrations.js
+ * Fetches entries 1-60 from Cognito Form 187 individually.
+ * Uses GET /api/forms/{InternalName}/entries/{id} which is confirmed
+ * to work (Entry Scope: Read = "Get Entry").
+ * Runs requests in parallel batches for speed.
+ */
+
 const https = require('https');
 
-// Org slug from Admin links: _1stUSVolunteerCavalryRegimentRoughRidersInc
-const ORG  = '_1stUSVolunteerCavalryRegimentRoughRidersInc';
 const FORM = '_2026RoughRidersCharityFishingTournamentEntry';
+const MAX_ENTRY = 60; // fetch IDs 1..60, skip 404s
+const BATCH     = 10; // parallel requests at a time
 
 function cognitoGet(path) {
   return new Promise((resolve, reject) => {
@@ -22,12 +30,18 @@ function cognitoGet(path) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch (e) { resolve({ status: res.statusCode, body: data.substring(0, 300) }); }
+        catch (e) { resolve({ status: res.statusCode, body: null }); }
       });
     });
-    req.on('error', reject);
+    req.on('error', () => resolve({ status: 0, body: null }));
     req.end();
   });
+}
+
+async function fetchEntry(id) {
+  const r = await cognitoGet(`forms/${FORM}/entries/${id}`);
+  if (r.status === 200 && r.body) return r.body;
+  return null;
 }
 
 exports.handler = async function (event) {
@@ -38,46 +52,34 @@ exports.handler = async function (event) {
   const debug = event.queryStringParameters && event.queryStringParameters.debug === '1';
 
   try {
+    // Test single entry fetch in debug mode
     if (debug) {
-      const results = {};
-      const paths = [
-        // Org-scoped paths (from admin URL pattern)
-        `${ORG}/forms/187/entries?take=3`,
-        `${ORG}/forms/${FORM}/entries?take=3`,
-        // Without org prefix but with InternalName
-        `forms/${FORM}/entries?take=3`,
-        // Lowered
-        `forms/${FORM.toLowerCase()}/entries?take=3`,
-      ];
-      for (const p of paths) {
-        try { results[p] = await cognitoGet(p); }
-        catch(e) { results[p] = { error: e.message }; }
-      }
+      const single = await cognitoGet(`forms/${FORM}/entries/1`);
+      const single2 = await cognitoGet(`forms/${FORM}/entries/187-1`);
       return {
         statusCode: 200,
         headers: corsHeaders(),
-        body: JSON.stringify({ debug: true, results }),
+        body: JSON.stringify({
+          debug: true,
+          'entries/1': { status: single.status, bodyKeys: single.body ? Object.keys(single.body) : null },
+          'entries/187-1': { status: single2.status, bodyKeys: single2.body ? Object.keys(single2.body) : null },
+        }),
       };
     }
 
-    // Try org-scoped path first (most likely correct based on admin URL pattern)
-    let result = await cognitoGet(`${ORG}/forms/187/entries?take=200`);
-    if (result.status === 404) {
-      result = await cognitoGet(`forms/${FORM}/entries?take=200`);
+    // Fetch all entries in parallel batches
+    const entries = [];
+    for (let start = 1; start <= MAX_ENTRY; start += BATCH) {
+      const ids = [];
+      for (let i = start; i < start + BATCH && i <= MAX_ENTRY; i++) ids.push(i);
+      const results = await Promise.all(ids.map(fetchEntry));
+      results.forEach(e => { if (e) entries.push(mapEntry(e)); });
     }
-    if (result.status !== 200) {
-      throw new Error('Cognito ' + result.status + ': ' + JSON.stringify(result.body).substring(0, 200));
-    }
-
-    const raw = result.body;
-    const list = Array.isArray(raw) ? raw
-               : Array.isArray(raw.entries) ? raw.entries
-               : [];
 
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({ entries: list.map(mapEntry), count: list.length, fetchedAt: new Date().toISOString() }),
+      body: JSON.stringify({ entries, count: entries.length, fetchedAt: new Date().toISOString() }),
     };
   } catch (err) {
     console.error(err);
@@ -86,21 +88,35 @@ exports.handler = async function (event) {
 };
 
 function mapEntry(e) {
+  // Full entry shape (nested) from GET /entries/{id}
+  const ci   = e.ContactInformation || {};
+  const td   = ci.TournamentDivision || {};
+  const name = (ci.Name && ci.Name.FirstAndLast) || ci.CaptainName || '';
+  const team = ci.TeamName || '';
+  const divs = Array.isArray(td.Divisions) ? td.Divisions.join(',') : '';
+  const divsC = Array.isArray(td.DivisionsComp) ? td.DivisionsComp.join(',') : '';
+  const twtI = Array.isArray(td.TWTInshore)  && td.TWTInshore.length  ? 'Inshore'  : '';
+  const twtO = Array.isArray(td.TWTOffshore) && td.TWTOffshore.length ? 'Offshore' : '';
+  const twtT = Array.isArray(td.TWTTarpon)   && td.TWTTarpon.length   ? 'Tarpon'   : '';
+  const twt  = [twtI, twtO, twtT].filter(Boolean).join(',');
+  const paid = (e.Order && e.Order.OrderAmount) || 0;
+  // Entry id is like "187-1" — extract the number
+  const idRaw = e.Id || '';
+  const idNum = idRaw.includes('-') ? parseInt(idRaw.split('-')[1]) : idRaw;
+
   return {
-    id:            e.Id || '',
-    name:          e.ContactInformation_Name || '',
-    teamName:      e.ContactInformation_TeamName || '',
-    divisions:     e.ContactInformation_TournamentDivision_Divisions || '',
-    divisionsComp: e.ContactInformation_TournamentDivision_DivisionsComp || '',
-    twt: [
-      e.ContactInformation_TournamentDivision_TWTInshore  || '',
-      e.ContactInformation_TournamentDivision_TWTOffshore || '',
-      e.ContactInformation_TournamentDivision_TWTTarpon   || '',
-    ].filter(Boolean).join(','),
-    isBoat:     e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true,
-    boatNumber: e.BoatNumber || null,
-    amountPaid: e.Order_OrderAmount || 0,
-    sponsor:    e.SponsorName || null,
+    id:            idNum,
+    name,
+    teamName:      team,
+    divisions:     divs,
+    divisionsComp: divsC,
+    twt,
+    isBoat:        !!e.AreYouEnteringABoat,
+    boatNumber:    e.BoatNumber || null,
+    amountPaid:    paid,
+    sponsor:       e.SponsorName || null,
+    email:         ci.Email || '',
+    phone:         ci.Phone || '',
   };
 }
 
