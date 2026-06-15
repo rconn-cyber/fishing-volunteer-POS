@@ -1,8 +1,7 @@
 /**
  * get-registrations.js
  * Fetches all entries from Cognito Form 187 (2026 Fishing Tournament)
- * and returns a clean roster for the registration table app.
- * Also fetches add-on form 210 entries.
+ * using the direct entries endpoint (not the view endpoint).
  *
  * GET /.netlify/functions/get-registrations
  */
@@ -11,12 +10,17 @@ const https = require('https');
 
 function cognitoGet(path) {
   return new Promise((resolve, reject) => {
+    const apiKey = process.env.COGNITO_API_KEY;
+    if (!apiKey) {
+      reject(new Error('COGNITO_API_KEY environment variable not set'));
+      return;
+    }
     const options = {
       hostname: 'www.cognitoforms.com',
       path: `/api/1/${path}`,
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${process.env.COGNITO_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
     };
@@ -24,8 +28,12 @@ function cognitoGet(path) {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(new Error('Invalid JSON: ' + data.substring(0, 200))); }
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch (e) {
+          reject(new Error('Cognito returned non-JSON (status ' + res.statusCode + '): ' + data.substring(0, 300)));
+        }
       });
     });
     req.on('error', reject);
@@ -33,39 +41,98 @@ function cognitoGet(path) {
   });
 }
 
-exports.handler = async function () {
-  try {
-    // Fetch all entries from main form 187 (view 187-1 = All Entries)
-    const data = await cognitoGet('forms/187/views/187-1/entries?take=200');
+function mapEntry(e) {
+  // Handle both flat (view) and nested (full entry) shapes
+  const name    = e.ContactInformation_Name
+               || (e.ContactInformation && e.ContactInformation.Name && e.ContactInformation.Name.FirstAndLast)
+               || '';
+  const team    = e.ContactInformation_TeamName
+               || (e.ContactInformation && e.ContactInformation.TeamName)
+               || '';
+  const divs    = e.ContactInformation_TournamentDivision_Divisions
+               || (e.ContactInformation && e.ContactInformation.TournamentDivision && Array.isArray(e.ContactInformation.TournamentDivision.Divisions)
+                   ? e.ContactInformation.TournamentDivision.Divisions.join(',')
+                   : '')
+               || '';
+  const divsComp = e.ContactInformation_TournamentDivision_DivisionsComp
+               || (e.ContactInformation && e.ContactInformation.TournamentDivision && Array.isArray(e.ContactInformation.TournamentDivision.DivisionsComp)
+                   ? e.ContactInformation.TournamentDivision.DivisionsComp.join(',')
+                   : '')
+               || '';
+  const isBoat  = e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true;
+  const paid    = e.Order_OrderAmount != null ? e.Order_OrderAmount
+               : (e.Order && e.Order.OrderAmount != null ? e.Order.OrderAmount : 0);
+  const entryId = e.Id || (e.Entry && e.Entry.Number) || '';
 
-    const entries = (data.entries || data || []).map(e => ({
-      id:          e.Id,
-      entryNum:    e.Id,                                          // Cognito entry number
-      name:        e.ContactInformation_Name || '',
-      teamName:    e.ContactInformation_TeamName || '',
-      divisions:   e.ContactInformation_TournamentDivision_Divisions || '',
-      divisionsComp: e.ContactInformation_TournamentDivision_DivisionsComp || '',
-      isBoat:      e.AreYouEnteringABoat === 'Yes',
-      boatNumber:  e.BoatNumber || null,
-      amountPaid:  e.Order_OrderAmount || 0,
-      sponsor:     e.SponsorName || null,
-      checkedIn:   false,                                         // managed client-side
-    }));
+  // Extract TWT from flat fields
+  const twtInshore  = e.ContactInformation_TournamentDivision_TWTInshore  || '';
+  const twtOffshore = e.ContactInformation_TournamentDivision_TWTOffshore || '';
+  const twtTarpon   = e.ContactInformation_TournamentDivision_TWTTarpon   || '';
+  const twt = [twtInshore, twtOffshore, twtTarpon].filter(Boolean).join(',');
+
+  return {
+    id:           entryId,
+    name:         name,
+    teamName:     team,
+    divisions:    divs,
+    divisionsComp: divsComp,
+    twt:          twt,
+    isBoat:       isBoat,
+    boatNumber:   e.BoatNumber || null,
+    amountPaid:   paid,
+    sponsor:      e.SponsorName || null,
+  };
+}
+
+exports.handler = async function (event) {
+  // CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders(), body: '' };
+  }
+
+  try {
+    // Use the entries endpoint directly with field selection
+    // Cognito entries endpoint: GET /forms/{id}/entries
+    const raw = await cognitoGet('forms/187/entries?take=200');
+
+    // Cognito can return an array directly OR { entries: [...] }
+    let list;
+    if (Array.isArray(raw)) {
+      list = raw;
+    } else if (raw && Array.isArray(raw.entries)) {
+      list = raw.entries;
+    } else if (raw && typeof raw === 'object' && !raw.error) {
+      // Sometimes returns paginated: { entries, totalCount, ... }
+      // or single object if only 1 entry — normalize
+      list = Object.values(raw).find(Array.isArray) || [];
+    } else if (raw && raw.error) {
+      throw new Error('Cognito error: ' + raw.error + ' — ' + (raw.Message || ''));
+    } else {
+      throw new Error('Unexpected Cognito response shape: ' + JSON.stringify(raw).substring(0, 200));
+    }
+
+    const entries = list.map(mapEntry);
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({ entries, fetchedAt: new Date().toISOString() }),
+      headers: corsHeaders(),
+      body: JSON.stringify({ entries, count: entries.length, fetchedAt: new Date().toISOString() }),
     };
   } catch (err) {
-    console.error('Cognito fetch error:', err);
+    console.error('get-registrations error:', err);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: corsHeaders(),
       body: JSON.stringify({ error: err.message }),
     };
   }
 };
+
+function corsHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  };
+}
