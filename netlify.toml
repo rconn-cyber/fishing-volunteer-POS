@@ -1,9 +1,13 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
+  command = "npm install"
 
 [functions]
-  node_bundler = "esbuild"
+  node_bundler = "zisi"
+
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
 
 [[headers]]
   for = "/*"
