@@ -355,12 +355,12 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 
     <!-- Raffle -->
     <div class="pos-section">
-      <div class="pos-section-title">Raffle</div>
-      <div class="trow-dark"><label>🎟 Single — $5</label>
-        <div class="qc-dark"><button class="qb-dark" onclick="chgR('s',-1)">−</button><div class="qn-dark" id="r-s">0</div><button class="qb-dark" onclick="chgR('s',1)">+</button></div>
+      <div class="pos-section-title">Raffle — $20 each</div>
+      <div class="trow-dark"><label>🎟 50/50 — $20</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgR('ff',-1)">−</button><div class="qn-dark" id="r-ff">0</div><button class="qb-dark" onclick="chgR('ff',1)">+</button></div>
       </div>
-      <div class="trow-dark"><label>📚 Book of 5 — $20</label>
-        <div class="qc-dark"><button class="qb-dark" onclick="chgR('b',-1)">−</button><div class="qn-dark" id="r-b">0</div><button class="qb-dark" onclick="chgR('b',1)">+</button></div>
+      <div class="trow-dark"><label>🧊 Yeti Cooler Full of Liquor — $20</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgR('yeti',-1)">−</button><div class="qn-dark" id="r-yeti">0</div><button class="qb-dark" onclick="chgR('yeti',1)">+</button></div>
       </div>
     </div>
 
@@ -431,12 +431,12 @@ var selectedEntry = null;
 var pay = 'card';
 var divs = {}, twts = {};
 var tkts = {cap:0,pool:0,ban:0,all:0};
-var raff = {s:0,b:0};
+var raff = {ff:0,yeti:0};
 var txlog = [];
 var pending = null;
 var processing = false;
 
-var PRICES = {boat:300,div:100,twt:100,cap:20,pool:20,ban:60,all:90,rs:5,rb:20};
+var PRICES = {boat:300,div:100,twt:100,cap:20,pool:20,ban:60,all:90,rff:20,ryeti:20};
 
 // ── LOAD ROSTER ───────────────────────────────────────────
 async function loadRoster() {
@@ -664,14 +664,14 @@ function chgTkt(k,d){ tkts[k]=Math.max(0,(tkts[k]||0)+d); document.getElementByI
 function chgR(k,d){ raff[k]=Math.max(0,raff[k]+d); document.getElementById('r-'+k).textContent=raff[k]; calcTotal(); }
 
 function clearPOSItems() {
-  divs={}; twts={}; tkts={cap:0,pool:0,ban:0,all:0}; raff={s:0,b:0};
+  divs={}; twts={}; tkts={cap:0,pool:0,ban:0,all:0}; raff={ff:0,yeti:0};
   ['inshore','offshore','tarpon'].forEach(function(d){
     document.getElementById('dcard-'+d).classList.remove('on');
     document.getElementById('tcard-'+d).classList.remove('on','elig');
   });
   ['cap','pool','ban','all'].forEach(function(k){document.getElementById('tkt-'+k).textContent='0';});
-  document.getElementById('r-s').textContent='0';
-  document.getElementById('r-b').textContent='0';
+  document.getElementById('r-ff').textContent='0';
+  document.getElementById('r-yeti').textContent='0';
 }
 
 function clearPOS() {
@@ -702,8 +702,8 @@ function calcTotal() {
   [{k:'cap',l:'🎫 Captains Mtg',p:PRICES.cap},{k:'pool',l:'🎟 Pool Party',p:PRICES.pool},
    {k:'ban',l:'🍽 Banquet',p:PRICES.ban},{k:'all',l:'🎫 All-Access',p:PRICES.all}
   ].forEach(function(t){ if(tkts[t.k]>0){lines.push({n:t.l+' ×'+tkts[t.k],a:t.p*tkts[t.k]});total+=t.p*tkts[t.k];} });
-  if(raff.s>0){lines.push({n:'🎟 Raffle ×'+raff.s,a:raff.s*PRICES.rs});total+=raff.s*PRICES.rs;}
-  if(raff.b>0){lines.push({n:'🎟 Raffle Book ×'+raff.b,a:raff.b*PRICES.rb});total+=raff.b*PRICES.rb;}
+  if(raff.ff>0){lines.push({n:'🎟 50/50 Raffle ×'+raff.ff,a:raff.ff*PRICES.rff});total+=raff.ff*PRICES.rff;}
+  if(raff.yeti>0){lines.push({n:'🧊 Yeti Cooler Raffle ×'+raff.yeti,a:raff.yeti*PRICES.ryeti});total+=raff.yeti*PRICES.ryeti;}
 
   var ol=document.getElementById('olines');
   ol.innerHTML = lines.length===0?'<div class="oempty">Nothing selected.</div>'
@@ -733,8 +733,8 @@ function buildMeta(data) {
   if(tkts.pool>0)parts.push(tkts.pool+'×Pool');
   if(tkts.ban>0)parts.push(tkts.ban+'×Banquet');
   if(tkts.all>0)parts.push(tkts.all+'×AllAccess');
-  if(raff.s>0)parts.push(raff.s+'×Raffle');
-  if(raff.b>0)parts.push(raff.b+'×RaffleBook');
+  if(raff.ff>0)parts.push(raff.ff+'×50/50');
+  if(raff.yeti>0)parts.push(raff.yeti+'×YetiRaffle');
   if(selectedEntry)parts.push('CognitoEntry:'+selectedEntry.id);
   return {
     customer:name, memberNo:mem,
