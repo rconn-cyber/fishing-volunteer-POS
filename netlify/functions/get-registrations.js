@@ -1,20 +1,9 @@
-/**
- * get-registrations.js
- * Fetches all entries from Cognito Form 187 (2026 Fishing Tournament)
- * using the direct entries endpoint (not the view endpoint).
- *
- * GET /.netlify/functions/get-registrations
- */
-
 const https = require('https');
 
 function cognitoGet(path) {
   return new Promise((resolve, reject) => {
     const apiKey = process.env.COGNITO_API_KEY;
-    if (!apiKey) {
-      reject(new Error('COGNITO_API_KEY environment variable not set'));
-      return;
-    }
+    if (!apiKey) { reject(new Error('COGNITO_API_KEY not set')); return; }
     const options = {
       hostname: 'www.cognitoforms.com',
       path: `/api/1/${path}`,
@@ -28,12 +17,8 @@ function cognitoGet(path) {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed);
-        } catch (e) {
-          reject(new Error('Cognito returned non-JSON (status ' + res.statusCode + '): ' + data.substring(0, 300)));
-        }
+        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
+        catch (e) { resolve({ status: res.statusCode, body: data.substring(0, 500) }); }
       });
     });
     req.on('error', reject);
@@ -41,82 +26,54 @@ function cognitoGet(path) {
   });
 }
 
-function mapEntry(e) {
-  // Handle both flat (view) and nested (full entry) shapes
-  const name    = e.ContactInformation_Name
-               || (e.ContactInformation && e.ContactInformation.Name && e.ContactInformation.Name.FirstAndLast)
-               || '';
-  const team    = e.ContactInformation_TeamName
-               || (e.ContactInformation && e.ContactInformation.TeamName)
-               || '';
-  const divs    = e.ContactInformation_TournamentDivision_Divisions
-               || (e.ContactInformation && e.ContactInformation.TournamentDivision && Array.isArray(e.ContactInformation.TournamentDivision.Divisions)
-                   ? e.ContactInformation.TournamentDivision.Divisions.join(',')
-                   : '')
-               || '';
-  const divsComp = e.ContactInformation_TournamentDivision_DivisionsComp
-               || (e.ContactInformation && e.ContactInformation.TournamentDivision && Array.isArray(e.ContactInformation.TournamentDivision.DivisionsComp)
-                   ? e.ContactInformation.TournamentDivision.DivisionsComp.join(',')
-                   : '')
-               || '';
-  const isBoat  = e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true;
-  const paid    = e.Order_OrderAmount != null ? e.Order_OrderAmount
-               : (e.Order && e.Order.OrderAmount != null ? e.Order.OrderAmount : 0);
-  const entryId = e.Id || (e.Entry && e.Entry.Number) || '';
-
-  // Extract TWT from flat fields
-  const twtInshore  = e.ContactInformation_TournamentDivision_TWTInshore  || '';
-  const twtOffshore = e.ContactInformation_TournamentDivision_TWTOffshore || '';
-  const twtTarpon   = e.ContactInformation_TournamentDivision_TWTTarpon   || '';
-  const twt = [twtInshore, twtOffshore, twtTarpon].filter(Boolean).join(',');
-
-  return {
-    id:           entryId,
-    name:         name,
-    teamName:     team,
-    divisions:    divs,
-    divisionsComp: divsComp,
-    twt:          twt,
-    isBoat:       isBoat,
-    boatNumber:   e.BoatNumber || null,
-    amountPaid:   paid,
-    sponsor:      e.SponsorName || null,
-  };
-}
-
 exports.handler = async function (event) {
-  // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders(), body: '' };
   }
 
-  // ?debug=1 returns raw Cognito response for troubleshooting
   const debug = event.queryStringParameters && event.queryStringParameters.debug === '1';
 
   try {
-    // Try view endpoint first (187-1 = All Entries view, confirmed 49 entries via MCP)
-    const raw = await cognitoGet('forms/187/views/187-1/entries?take=200');
+    // Try multiple endpoint patterns to find what works with API key auth
+    const endpoints = [
+      'forms/187/entries?take=200',
+      'forms/187/entries',
+      'forms/187/entries?$top=200',
+    ];
 
     if (debug) {
+      // In debug mode, try all endpoints and return results
+      const results = {};
+      for (const ep of endpoints) {
+        try {
+          results[ep] = await cognitoGet(ep);
+        } catch(e) {
+          results[ep] = { error: e.message };
+        }
+      }
       return {
         statusCode: 200,
         headers: corsHeaders(),
-        body: JSON.stringify({ debug: true, rawType: typeof raw, isArray: Array.isArray(raw), raw }),
+        body: JSON.stringify({ debug: true, results }),
       };
     }
 
-    // Cognito view endpoint returns { entries: [...], requestId: "..." }
+    // Normal mode — use direct entries endpoint
+    const result = await cognitoGet('forms/187/entries?take=200');
+    const raw = result.body;
+
     let list;
     if (Array.isArray(raw)) {
       list = raw;
     } else if (raw && Array.isArray(raw.entries)) {
       list = raw.entries;
-    } else if (raw && typeof raw === 'object' && !raw.error) {
-      list = Object.values(raw).find(v => Array.isArray(v)) || [];
-    } else if (raw && raw.error) {
-      throw new Error('Cognito error: ' + raw.error + ' — ' + (raw.Message || ''));
+    } else if (raw && raw.Type === 'ResourceNotFound') {
+      throw new Error('Cognito: Resource not found — check API key permissions');
+    } else if (raw && typeof raw === 'object') {
+      const arr = Object.values(raw).find(v => Array.isArray(v));
+      list = arr || [];
     } else {
-      throw new Error('Unexpected response: ' + JSON.stringify(raw).substring(0, 300));
+      throw new Error('Unexpected response: ' + JSON.stringify(raw).substring(0, 200));
     }
 
     const entries = list.map(mapEntry);
@@ -135,6 +92,28 @@ exports.handler = async function (event) {
     };
   }
 };
+
+function mapEntry(e) {
+  const name  = e.ContactInformation_Name || '';
+  const team  = e.ContactInformation_TeamName || '';
+  const divs  = e.ContactInformation_TournamentDivision_Divisions || '';
+  const divsC = e.ContactInformation_TournamentDivision_DivisionsComp || '';
+  const isBoat = e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true;
+  const paid  = e.Order_OrderAmount != null ? e.Order_OrderAmount : 0;
+  const twt   = [
+    e.ContactInformation_TournamentDivision_TWTInshore  || '',
+    e.ContactInformation_TournamentDivision_TWTOffshore || '',
+    e.ContactInformation_TournamentDivision_TWTTarpon   || '',
+  ].filter(Boolean).join(',');
+
+  return {
+    id: e.Id || '',
+    name, teamName: team,
+    divisions: divs, divisionsComp: divsC, twt,
+    isBoat, boatNumber: e.BoatNumber || null,
+    amountPaid: paid, sponsor: e.SponsorName || null,
+  };
+}
 
 function corsHeaders() {
   return {
