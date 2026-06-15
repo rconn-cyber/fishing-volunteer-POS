@@ -4,7 +4,6 @@
   "description": "Rough Riders Fishing Tournament — Volunteer POS",
   "private": true,
   "dependencies": {
-    "@netlify/plugin-functions-install-core": "^1.0.0",
     "stripe": "^14.25.0"
   },
   "engines": {
