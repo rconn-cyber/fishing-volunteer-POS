@@ -90,25 +90,33 @@ exports.handler = async function (event) {
     return { statusCode: 200, headers: corsHeaders(), body: '' };
   }
 
-  try {
-    // Use the entries endpoint directly with field selection
-    // Cognito entries endpoint: GET /forms/{id}/entries
-    const raw = await cognitoGet('forms/187/entries?take=200');
+  // ?debug=1 returns raw Cognito response for troubleshooting
+  const debug = event.queryStringParameters && event.queryStringParameters.debug === '1';
 
-    // Cognito can return an array directly OR { entries: [...] }
+  try {
+    // Try view endpoint first (187-1 = All Entries view, confirmed 49 entries via MCP)
+    const raw = await cognitoGet('forms/187/views/187-1/entries?take=200');
+
+    if (debug) {
+      return {
+        statusCode: 200,
+        headers: corsHeaders(),
+        body: JSON.stringify({ debug: true, rawType: typeof raw, isArray: Array.isArray(raw), raw }),
+      };
+    }
+
+    // Cognito view endpoint returns { entries: [...], requestId: "..." }
     let list;
     if (Array.isArray(raw)) {
       list = raw;
     } else if (raw && Array.isArray(raw.entries)) {
       list = raw.entries;
     } else if (raw && typeof raw === 'object' && !raw.error) {
-      // Sometimes returns paginated: { entries, totalCount, ... }
-      // or single object if only 1 entry — normalize
-      list = Object.values(raw).find(Array.isArray) || [];
+      list = Object.values(raw).find(v => Array.isArray(v)) || [];
     } else if (raw && raw.error) {
       throw new Error('Cognito error: ' + raw.error + ' — ' + (raw.Message || ''));
     } else {
-      throw new Error('Unexpected Cognito response shape: ' + JSON.stringify(raw).substring(0, 200));
+      throw new Error('Unexpected response: ' + JSON.stringify(raw).substring(0, 300));
     }
 
     const entries = list.map(mapEntry);
