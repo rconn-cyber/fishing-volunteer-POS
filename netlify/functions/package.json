@@ -1,0 +1,12 @@
+{
+  "name": "fishing-volunteer-pos",
+  "version": "1.0.0",
+  "description": "Rough Riders Fishing Tournament — Volunteer Point of Sale",
+  "private": true,
+  "dependencies": {
+    "stripe": "^14.25.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
