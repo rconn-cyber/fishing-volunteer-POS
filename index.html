@@ -409,7 +409,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 
 <script>
 // ── STRIPE ────────────────────────────────────────────────
-var STRIPE_PK = 'pk_live_tOC3yVZcKWUUynwdigM6qZgL';
+var STRIPE_PK = 'pk_live_51PLACEHOLDER_REPLACE_WITH_YOUR_KEY';
 var stripe = Stripe(STRIPE_PK);
 var elements = stripe.elements();
 var cardEl = null, cardMounted = false;
@@ -444,9 +444,15 @@ async function loadRoster() {
 
   try {
     var resp = await fetch('/.netlify/functions/get-registrations');
+    if (!resp.ok) {
+      var errText = await resp.text();
+      throw new Error('HTTP ' + resp.status + ': ' + errText.substring(0, 200));
+    }
     var data = await resp.json();
     if (data.error) throw new Error(data.error);
-    roster = data.entries || [];
+    // Handle both {entries:[]} and raw array
+    roster = Array.isArray(data) ? data : (data.entries || []);
+    if (!Array.isArray(roster)) throw new Error('Unexpected data shape from server');
     renderRoster();
     updateStats();
   } catch(err) {
