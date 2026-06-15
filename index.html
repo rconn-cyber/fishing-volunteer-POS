@@ -190,6 +190,18 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 
 /* checked-in count chip */
 .ci-chip{background:rgba(26,107,60,.25);color:#6ee09a;border:1px solid rgba(110,224,154,.2);border-radius:5px;padding:3px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px}
+
+/* ── HELP TAB ── */
+.help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:4px 0 16px}
+.help-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
+.help-icon{font-size:28px;margin-bottom:8px}
+.help-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;letter-spacing:.04em;color:var(--navy);margin-bottom:10px;text-transform:uppercase}
+.help-steps{padding-left:18px;color:var(--dark);font-size:14px;line-height:1.7}
+.help-steps li{margin-bottom:4px}
+.help-steps strong{color:var(--navy)}
+.hbadge-green{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px}
+.hbadge-gold{background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:4px;padding:1px 7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px}
+.help-footer{background:#f7f9ff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--mid);text-align:center;line-height:1.8}
 </style>
 </head>
 <body>
@@ -236,6 +248,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
   <div class="tabs">
     <button class="tab on" id="tab-roster" onclick="showTab('roster')">📋 Roster</button>
     <button class="tab" id="tab-log" onclick="showTab('log')">📄 Transaction Log</button>
+    <button class="tab" id="tab-help" onclick="showTab('help')">❓ How To</button>
   </div>
 
   <!-- Roster content -->
@@ -265,6 +278,92 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
   <!-- Log tab -->
   <div class="roster-wrap" id="logTab" style="display:none">
     <div id="logContent" style="color:var(--mid);font-size:13px;padding:20px">No transactions yet this session.</div>
+  </div>
+
+  <!-- Help tab -->
+  <div class="roster-wrap" id="helpTab" style="display:none">
+    <div class="help-grid">
+
+      <div class="help-card">
+        <div class="help-icon">✅</div>
+        <div class="help-title">Check In a Pre-Registered Person</div>
+        <ol class="help-steps">
+          <li>Search their name in the search bar above.</li>
+          <li>Click <strong>Select →</strong> on their row — they are automatically marked checked in.</li>
+          <li>The POS panel opens in <span class="hbadge-green">Add-On</span> mode. If they owe nothing extra, just click <strong>Clear / New Transaction</strong> and move on.</li>
+          <li>If they want to add divisions, TWT, or tickets — select those items, then charge.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">🎣</div>
+        <div class="help-title">Walk-Up — New Boat Registration</div>
+        <ol class="help-steps">
+          <li>Click the green <strong>＋ Walk-Up</strong> button in the search bar.</li>
+          <li>Enter the captain's name and member number (leave blank if non-member).</li>
+          <li>Select division(s) — <strong>Inshore, Offshore, and/or Tarpon</strong> ($100 each). The $300 boat fee is added automatically.</li>
+          <li>Optionally add TWT ($100/div), weekend tickets, or raffle tickets.</li>
+          <li>Choose <strong>Card</strong> or <strong>Cash</strong>, then click <strong>Charge</strong>.</li>
+          <li>Confirm the order in the popup, swipe/enter the card, and a receipt prints automatically.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">➕</div>
+        <div class="help-title">Add Divisions or TWT to Existing Registration</div>
+        <ol class="help-steps">
+          <li>Find the person in the roster and click <strong>Select →</strong>.</li>
+          <li>The POS opens in <span class="hbadge-gold">Add-On</span> mode — no boat fee is charged again.</li>
+          <li>Select the additional division(s) they are adding ($100 each).</li>
+          <li>To add TWT, select the division first — TWT tiles activate once a division is selected.</li>
+          <li>Charge as normal.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">🎟</div>
+        <div class="help-title">Sell Weekend Event Tickets</div>
+        <ol class="help-steps">
+          <li>Find the person (or start a walk-up for a non-registrant).</li>
+          <li>Scroll down to <strong>Weekend Tickets</strong> in the POS panel.</li>
+          <li>Use <strong>＋ / −</strong> to set quantities:<br>
+            🎫 Captains Meeting — $20<br>
+            🎟 Pool Party — $20<br>
+            🍽 Awards Banquet — $60<br>
+            🎫 All-Access (all three) — $90
+          </li>
+          <li>Add raffle tickets if needed (50/50 or Yeti Cooler — $20 each).</li>
+          <li>Charge via card or cash.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">🚤</div>
+        <div class="help-title">Assign a Boat Number</div>
+        <ol class="help-steps">
+          <li>Find the boat in the roster — look for the <strong>Boat #</strong> column.</li>
+          <li>Click the input field in that column and type the assigned boat number.</li>
+          <li>Press Tab or click away — it saves automatically in this session.</li>
+          <li><em>Note: boat numbers are session-only and not saved back to Cognito.</em></li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">💵</div>
+        <div class="help-title">Cash Transactions</div>
+        <ol class="help-steps">
+          <li>Select <strong>Cash</strong> in the Payment toggle before charging.</li>
+          <li>The confirm popup will show the total to collect — no card entry needed.</li>
+          <li>Click <strong>Confirm &amp; Print</strong> — a receipt prints and the transaction is logged.</li>
+          <li>Cash sales still record buyer name, member #, and items in the session log (📄 Transaction Log tab).</li>
+        </ol>
+      </div>
+
+    </div>
+
+    <div class="help-footer">
+      Prices: Boat Entry $300 · Division $100 · TWT $100/div · Captains Mtg $20 · Pool Party $20 · Banquet $60 · All-Access $90 · Raffle $20
+    </div>
   </div>
 
 </div><!-- main-col -->
@@ -555,8 +654,10 @@ function showTab(t) {
   activeTab = t;
   document.getElementById('tab-roster').classList.toggle('on', t==='roster');
   document.getElementById('tab-log').classList.toggle('on', t==='log');
+  document.getElementById('tab-help').classList.toggle('on', t==='help');
   document.getElementById('rosterTab').style.display = t==='roster' ? '' : 'none';
   document.getElementById('logTab').style.display = t==='log' ? '' : 'none';
+  document.getElementById('helpTab').style.display = t==='help' ? '' : 'none';
   if (t==='log') renderLog();
 }
 
