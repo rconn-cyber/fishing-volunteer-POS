@@ -27,13 +27,13 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .stat span{color:var(--gold2)}
 
 /* ── TABS ── */
-.tabs{display:flex;background:var(--navy2);border-bottom:2px solid rgba(201,168,76,.2);padding:0 16px;gap:2px}
+.tabs{display:flex;background:var(--navy2);border-bottom:2px solid rgba(201,168,76,.2);padding:0 16px;gap:2px;position:sticky;top:56px;z-index:210}
 .tab{padding:10px 18px;background:none;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);transition:all .15s;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tab:hover{color:rgba(255,255,255,.75)}
 .tab.on{color:var(--gold2);border-bottom-color:var(--gold)}
 
 /* ── SEARCH BAR ── */
-.searchbar{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;position:sticky;top:56px;z-index:200}
+.searchbar{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;position:sticky;top:102px;z-index:200}
 .srch{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Barlow',sans-serif;font-size:15px;outline:none;transition:border-color .15s}
 .srch:focus{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.1)}
 .filter-btns{display:flex;gap:6px}
@@ -50,7 +50,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .roster-wrap{padding:12px 16px}
 .loading{text-align:center;padding:40px;color:var(--mid);font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.1em}
 .roster-table{width:100%;border-collapse:collapse;font-size:14px}
-.roster-table th{background:var(--navy);color:var(--gold2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:9px 12px;text-align:left;position:sticky;top:108px;z-index:100}
+.roster-table th{background:var(--navy);color:var(--gold2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:9px 12px;text-align:left;position:sticky;top:156px;z-index:100}
 .roster-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 .roster-table tr:hover td{background:#f7f9ff}
 .roster-table tr.checked-in td{background:#f0fff4}
@@ -226,6 +226,13 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 <!-- ════════ LEFT: ROSTER ════════ -->
 <div class="main-col">
 
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab on" id="tab-roster" onclick="showTab('roster')">📋 Roster</button>
+    <button class="tab" id="tab-log" onclick="showTab('log')">📄 Transaction Log</button>
+    <button class="tab" id="tab-help" onclick="showTab('help')">❓ How To</button>
+  </div>
+
   <!-- Search & filters -->
   <div class="searchbar">
     <input class="srch" id="searchInput" placeholder="🔍  Search name, team, captain…" oninput="filterRoster()" autocomplete="off">
@@ -242,13 +249,6 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
     <button class="walkup-btn" onclick="startWalkup()">
       ＋ Walk-Up
     </button>
-  </div>
-
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab on" id="tab-roster" onclick="showTab('roster')">📋 Roster</button>
-    <button class="tab" id="tab-log" onclick="showTab('log')">📄 Transaction Log</button>
-    <button class="tab" id="tab-help" onclick="showTab('help')">❓ How To</button>
   </div>
 
   <!-- Roster content -->
