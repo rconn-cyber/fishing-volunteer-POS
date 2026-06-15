@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rough Riders · Volunteer POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:     #0d1f3c;
+  --navy2:    #152d54;
+  --gold:     #c9a84c;
+  --gold2:    #e8c870;
+  --golddim:  #a07830;
+  --water:    #0a4a6e;
+  --red:      #b92b2b;
+  --green:    #1a6b3c;
+  --cream:    #f5f0e8;
+  --bg:       #f0f2f5;
+  --card:     #ffffff;
+  --border:   #dde2ec;
+  --mid:      #5a6880;
+  --dark:     #1a1a2e;
+  --shadow:   0 2px 12px rgba(13,31,60,0.10);
+  --shadow2:  0 4px 24px rgba(13,31,60,0.16);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--navy);
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+  border-bottom: 3px solid var(--gold);
+  position: sticky; top: 0; z-index: 200;
+}
+.header-brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900; font-size: 18px;
+  color: var(--gold2);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.header-sub { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
+.header-badge {
+  background: var(--red); color: white;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 4px;
+}
+
+/* ── LAYOUT ── */
+.layout { display: flex; gap: 0; min-height: calc(100vh - 56px); }
+.left-panel { flex: 1; padding: 16px; overflow-y: auto; max-width: 620px; }
+.right-panel {
+  width: 320px; flex-shrink: 0;
+  background: var(--navy);
+  padding: 16px;
+  border-left: 2px solid rgba(201,168,76,0.25);
+  display: flex; flex-direction: column;
+  position: sticky; top: 56px; height: calc(100vh - 56px);
+  overflow-y: auto;
+}
+
+@media (max-width: 860px) {
+  .layout { flex-direction: column; }
+  .right-panel { width: 100%; position: static; height: auto; }
+  .left-panel { max-width: 100%; }
+}
+
+/* ── SECTION CARDS ── */
+.section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+  box-shadow: var(--shadow); margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mid); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title svg { flex-shrink: 0; }
+
+/* ── FORM FIELDS ── */
+.field-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.field-row.col1 { flex-direction: column; }
+.field { flex: 1; }
+.field label {
+  display: block; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mid); margin-bottom: 4px;
+}
+.field input, .field select {
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid var(--border); border-radius: 7px;
+  font-family: 'Barlow', sans-serif; font-size: 15px;
+  color: var(--dark); background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--water); box-shadow: 0 0 0 3px rgba(10,74,110,0.12);
+}
+
+/* ── PAYMENT TOGGLE ── */
+.pay-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 12px; }
+.pay-btn {
+  flex: 1; padding: 10px 6px;
+  background: #fff; border: none; cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--mid); transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pay-btn.active { background: var(--navy); color: var(--gold2); }
+.pay-btn:not(:last-child) { border-right: 1.5px solid var(--border); }
+
+/* ── DIVISION BUTTONS ── */
+.div-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.div-btn {
+  border: 2px solid var(--border); border-radius: 8px;
+  padding: 10px 8px; cursor: pointer; background: #fff;
+  transition: all 0.15s; text-align: center;
+}
+.div-btn:hover { border-color: var(--water); background: #f0f6ff; }
+.div-btn.active { border-color: var(--navy); background: #eef2ff; }
+.div-btn .div-icon { font-size: 20px; margin-bottom: 3px; }
+.div-btn .div-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: var(--navy); }
+.div-btn .div-price { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; color: var(--golddim); font-weight: 600; }
+
+/* ── ANGLER COUNTER ── */
+.angler-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.angler-ctrl { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.angler-btn-ctrl {
+  width: 38px; height: 38px; background: none; border: none;
+  font-size: 20px; color: var(--navy); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.angler-btn-ctrl:hover { background: #f0f2f5; }
+.angler-num {
+  width: 52px; text-align: center;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px;
+  color: var(--navy); border-left: 1.5px solid var(--border); border-right: 1.5px solid var(--border);
+  padding: 6px 0;
+}
+.angler-note { font-size: 13px; color: var(--mid); }
+
+/* ── ADDON CHECKBOXES ── */
+.addon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.addon-item {
+  border: 1.5px solid var(--border); border-radius: 7px;
+  padding: 9px 11px; cursor: pointer; background: #fff;
+  transition: all 0.14s; display: flex; align-items: flex-start; gap: 8px;
+  user-select: none;
+}
+.addon-item:hover { border-color: var(--water); background: #f4f8ff; }
+.addon-item.active { border-color: var(--water); background: #eef4ff; }
+.addon-item.active .addon-cb { background: var(--water); border-color: var(--water); }
+.addon-item.active .addon-cb::after { opacity: 1; }
+.addon-cb {
+  width: 17px; height: 17px; border-radius: 4px;
+  border: 2px solid var(--border); background: #fff;
+  flex-shrink: 0; margin-top: 2px; position: relative;
+  transition: all 0.12s;
+}
+.addon-cb::after {
+  content: '✓'; position: absolute;
+  top: -1px; left: 1px; font-size: 11px; color: white; opacity: 0;
+  transition: opacity 0.1s;
+}
+.addon-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 13px; color: var(--navy); }
+.addon-desc { font-size: 11px; color: var(--mid); margin-top: 1px; }
+.addon-price-tag { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; color: var(--water); margin-top: 2px; }
+
+/* ── VARIABLE-AMOUNT ROWS (Auction / Raffle) ── */
+.var-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 7px;
+  background: #fff; margin-bottom: 7px;
+}
+.var-row .var-label { flex: 1; font-size: 14px; color: var(--dark); font-weight: 500; }
+.var-row .var-input {
+  width: 80px; padding: 6px 8px; text-align: right;
+  border: 1.5px solid var(--border); border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px;
+  color: var(--navy);
+}
+.var-row .var-input:focus { outline: none; border-color: var(--water); }
+.add-var-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border: 1.5px dashed var(--border);
+  border-radius: 7px; background: none; cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 13px;
+  color: var(--mid); letter-spacing: 0.04em; transition: all 0.14s; width: 100%;
+}
+.add-var-btn:hover { border-color: var(--water); color: var(--water); background: #f4f8ff; }
+.remove-btn {
+  width: 24px; height: 24px; border-radius: 50%; border: none;
+  background: #f5e8e8; color: var(--red); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background 0.12s;
+}
+.remove-btn:hover { background: #ffd5d5; }
+
+/* ── RAFFLE QTY ── */
+.raffle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.raffle-row label { font-size: 13px; color: var(--mid); flex: 1; }
+.qty-ctrl { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: 6px; overflow: hidden; }
+.qty-btn { width: 30px; height: 30px; border: none; background: none; font-size: 16px; cursor: pointer; color: var(--navy); display: flex; align-items: center; justify-content: center; }
+.qty-btn:hover { background: #f0f2f5; }
+.qty-num { width: 36px; text-align: center; font-weight: 700; font-size: 15px; color: var(--navy); border-left: 1.5px solid var(--border); border-right: 1.5px solid var(--border); padding: 3px 0; }
+
+/* ── ORDER PANEL (right) ── */
+.order-title {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+  font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold2); margin-bottom: 14px;
+  padding-bottom: 10px; border-bottom: 1px solid rgba(201,168,76,0.2);
+  display: flex; align-items: center; gap: 8px;
+}
+.order-buyer { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 12px; min-height: 16px; }
+.order-lines { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+.order-line {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 14px; color: rgba(255,255,255,0.82);
+  gap: 8px;
+}
+.order-line-name { flex: 1; }
+.order-line-amt { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; color: white; flex-shrink: 0; }
+.order-empty { color: rgba(255,255,255,0.28); font-size: 13px; font-style: italic; padding: 12px 0; }
+.order-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-top: 2px solid rgba(201,168,76,0.35);
+  margin-top: 4px;
+}
+.order-total-label { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.order-total-amt { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 30px; color: var(--gold2); }
+
+.payment-method-badge {
+  text-align: center; margin-bottom: 12px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 6px; border-radius: 6px;
+}
+.payment-method-badge.cash { background: rgba(26,107,60,0.25); color: #6ee09a; border: 1px solid rgba(110,224,154,0.25); }
+.payment-method-badge.card { background: rgba(10,74,110,0.35); color: #7dd3f5; border: 1px solid rgba(125,211,245,0.25); }
+
+/* ── CHARGE BUTTON ── */
+.charge-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--golddim), var(--gold));
+  color: var(--navy); border: none; border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+  font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.charge-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.4); }
+.charge-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; filter: none; box-shadow: none; }
+.clear-btn {
+  width: 100%; padding: 9px; margin-top: 8px;
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 7px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+  font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.14s;
+}
+.clear-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); }
+
+/* ── RECEIPT MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65); z-index: 500;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 12px;
+  width: 100%; max-width: 400px;
+  padding: 28px 26px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.modal-icon { text-align: center; font-size: 44px; margin-bottom: 10px; }
+.modal-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 22px; text-align: center; color: var(--navy); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+.modal-sub { text-align: center; font-size: 13px; color: var(--mid); margin-bottom: 20px; }
+.receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 14px; }
+.receipt-table td { padding: 5px 0; color: var(--dark); }
+.receipt-table td:last-child { text-align: right; font-weight: 600; }
+.receipt-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+.receipt-total-row td { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; color: var(--navy); padding-top: 8px; }
+.receipt-meta { font-size: 12px; color: var(--mid); text-align: center; margin-bottom: 18px; line-height: 1.6; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-btn {
+  flex: 1; padding: 11px; border-radius: 7px; border: none; cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.14s;
+}
+.modal-btn.primary { background: var(--navy); color: var(--gold2); }
+.modal-btn.primary:hover { background: var(--navy2); }
+.modal-btn.secondary { background: var(--bg); color: var(--mid); border: 1.5px solid var(--border); }
+.modal-btn.secondary:hover { background: var(--border); }
+
+/* ── TRANSACTION LOG ── */
+.log-toggle {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
+  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); padding: 6px 0; margin-top: 6px;
+  display: flex; align-items: center; gap: 4px; width: 100%;
+}
+.log-toggle:hover { color: rgba(255,255,255,0.6); }
+.log-panel { display: none; margin-top: 8px; max-height: 160px; overflow-y: auto; }
+.log-panel.open { display: block; }
+.log-entry {
+  padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 11px; color: rgba(255,255,255,0.5); line-height: 1.5;
+}
+.log-entry .log-name { color: rgba(255,255,255,0.75); font-weight: 600; }
+.log-entry .log-amt { color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; }
+
+/* ── MISC ── */
+.reg-subsection { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.note { font-size: 12px; color: var(--mid); font-style: italic; margin-top: 5px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-brand">⚓ Rough Riders · Fishing Tournament</div>
+    <div class="header-sub">Volunteer Point of Sale · 31st Annual</div>
+  </div>
+  <div class="header-badge">🔒 Staff Only</div>
+</div>
+
+<div class="layout">
+
+  <!-- ════════ LEFT PANEL ════════ -->
+  <div class="left-panel">
+
+    <!-- PAYMENT METHOD -->
+    <div class="section">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Payment Method
+      </div>
+      <div class="pay-toggle">
+        <button class="pay-btn active" id="btn-card" onclick="setPayment('card')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          Credit Card
+        </button>
+        <button class="pay-btn" id="btn-cash" onclick="setPayment('cash')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="10" rx="1"/><path d="M2 12h20M12 7v10"/></svg>
+          Cash
+        </button>
+      </div>
+    </div>
+
+    <!-- BUYER INFO -->
+    <div class="section">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Buyer Info
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>First Name *</label>
+          <input type="text" id="fName" placeholder="First" oninput="updateBuyer()" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Last Name *</label>
+          <input type="text" id="lName" placeholder="Last" oninput="updateBuyer()" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Member # <span style="color:var(--mid);font-weight:400;text-transform:none;letter-spacing:0">(if applicable)</span></label>
+          <input type="text" id="memberNum" placeholder="e.g. RR-1042" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Phone / Email <span style="color:var(--mid);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input type="text" id="contact" placeholder="For receipt" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <!-- FISHING REGISTRATION -->
+    <div class="section">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 16.016c.93.144 1.74.5 2.383 1.021a4.5 4.5 0 010 5.926"/><path d="M2 17l5 3h10l5-3M12 3C9.239 3 7 5.239 7 8s2.239 5 5 5 5-2.239 5-5-2.239-5-5-5z"/><path d="M12 13v4"/></svg>
+        Fishing Registration
+      </div>
+
+      <div class="section-title" style="margin-bottom:8px;font-size:11px">Select Division</div>
+      <div class="div-grid" id="divGrid">
+        <div class="div-btn active" id="divbtn-inshore" onclick="selectDiv('inshore')">
+          <div class="div-icon">🐟</div>
+          <div class="div-name">Inshore</div>
+          <div class="div-price">$100 / div</div>
+        </div>
+        <div class="div-btn" id="divbtn-offshore" onclick="selectDiv('offshore')">
+          <div class="div-icon">🎣</div>
+          <div class="div-name">Offshore</div>
+          <div class="div-price">$150 / div</div>
+        </div>
+        <div class="div-btn" id="divbtn-tarpon" onclick="selectDiv('tarpon')">
+          <div class="div-icon">🦈</div>
+          <div class="div-name">Tarpon</div>
+          <div class="div-price">$150 / div</div>
+        </div>
+      </div>
+
+      <div class="reg-subsection">
+        <div class="section-title" style="font-size:11px;margin-bottom:4px"># of Anglers</div>
+        <div class="angler-row">
+          <div class="angler-ctrl">
+            <button class="angler-btn-ctrl" onclick="changeAnglers(-1)">−</button>
+            <div class="angler-num" id="anglerNum">1</div>
+            <button class="angler-btn-ctrl" onclick="changeAnglers(1)">+</button>
+          </div>
+          <div class="angler-note" id="anglerNote">1 × $100 = $100.00</div>
+        </div>
+      </div>
+
+      <div class="reg-subsection">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div class="section-title" style="font-size:11px;margin-bottom:0">Additional Divisions</div>
+          <div style="font-size:11px;color:var(--mid)">Check all that apply</div>
+        </div>
+        <div id="extraDivContainer">
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;font-size:14px;color:var(--dark);">
+            <input type="checkbox" id="extra-inshore" value="inshore" onchange="calcTotal()"> <span>🐟 Add Inshore Division  <span style="color:var(--golddim);font-weight:600">+$100/angler</span></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;font-size:14px;color:var(--dark);">
+            <input type="checkbox" id="extra-offshore" value="offshore" onchange="calcTotal()"> <span>🎣 Add Offshore Division  <span style="color:var(--golddim);font-weight:600">+$150/angler</span></span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;font-size:14px;color:var(--dark);">
+            <input type="checkbox" id="extra-tarpon" value="tarpon" onchange="calcTotal()"> <span>🦈 Add Tarpon Division  <span style="color:var(--golddim);font-weight:600">+$150/angler</span></span>
+          </label>
+        </div>
+        <div class="note">Primary division is already included. Additional divisions are charged per angler.</div>
+      </div>
+    </div>
+
+    <!-- ADD-ONS -->
+    <div class="section">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        Add-Ons &amp; Extras
+      </div>
+      <div class="addon-grid">
+        <div class="addon-item" id="addon-dinner" onclick="toggleAddon('dinner',45,false,'Awards Dinner Ticket')">
+          <div class="addon-cb" id="cb-dinner"></div>
+          <div>
+            <div class="addon-label">🍽 Dinner Ticket</div>
+            <div class="addon-desc">Saturday awards banquet</div>
+            <div class="addon-price-tag">$45 / person</div>
+          </div>
+        </div>
+        <div class="addon-item" id="addon-tshirt" onclick="toggleAddon('tshirt',25,false,'Tournament T-Shirt')">
+          <div class="addon-cb" id="cb-tshirt"></div>
+          <div>
+            <div class="addon-label">👕 T-Shirt</div>
+            <div class="addon-desc">Official 31st Annual tee</div>
+            <div class="addon-price-tag">$25 / person</div>
+          </div>
+        </div>
+        <div class="addon-item" id="addon-bait" onclick="toggleAddon('bait',40,true,'Bait Package')">
+          <div class="addon-cb" id="cb-bait"></div>
+          <div>
+            <div class="addon-label">🪱 Bait Package</div>
+            <div class="addon-desc">Pre-arranged live bait</div>
+            <div class="addon-price-tag">$40 flat</div>
+          </div>
+        </div>
+        <div class="addon-item" id="addon-cooler" onclick="toggleAddon('cooler',20,true,'Cooler Rental')">
+          <div class="addon-cb" id="cb-cooler"></div>
+          <div>
+            <div class="addon-label">🧊 Cooler Rental</div>
+            <div class="addon-desc">On-site cooler &amp; ice</div>
+            <div class="addon-price-tag">$20 flat</div>
+          </div>
+        </div>
+        <div class="addon-item" id="addon-photo" onclick="toggleAddon('photo',60,true,'Pro Photo Package')">
+          <div class="addon-cb" id="cb-photo"></div>
+          <div>
+            <div class="addon-label">📸 Pro Photos</div>
+            <div class="addon-desc">Digital catch &amp; crew photos</div>
+            <div class="addon-price-tag">$60 flat</div>
+          </div>
+        </div>
+        <div class="addon-item" id="addon-wristband" onclick="toggleAddon('wristband',20,true,'Pool Party Wristband')">
+          <div class="addon-cb" id="cb-wristband"></div>
+          <div>
+            <div class="addon-label">🎟 Pool Wristband</div>
+            <div class="addon-desc">Pool party access</div>
+            <div class="addon-price-tag">$20 flat</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raffle tickets -->
+      <div class="reg-subsection">
+        <div class="section-title" style="font-size:11px;margin-bottom:10px">🎟 Raffle Tickets</div>
+        <div class="raffle-row">
+          <label>Single ticket — $5 each</label>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeRaffle('single',-1)">−</button>
+            <div class="qty-num" id="raffle-single">0</div>
+            <button class="qty-btn" onclick="changeRaffle('single',1)">+</button>
+          </div>
+        </div>
+        <div class="raffle-row">
+          <label>Book of 5 — $20 per book</label>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeRaffle('book',-1)">−</button>
+            <div class="qty-num" id="raffle-book">0</div>
+            <button class="qty-btn" onclick="changeRaffle('book',1)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUCTION ITEMS -->
+    <div class="section">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 2 2 6-6-2-2zM8 16l-2 4h8l-2-4H8z"/><path d="M3 3l3 3"/></svg>
+        Auction Items
+      </div>
+      <div id="auctionItems"></div>
+      <button class="add-var-btn" onclick="addAuction()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        Add Auction Item
+      </button>
+      <div class="note">Enter description and winning bid amount for each item.</div>
+    </div>
+
+    <!-- MISCELLANEOUS -->
+    <div class="section">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+        Miscellaneous / Other
+      </div>
+      <div id="miscItems"></div>
+      <button class="add-var-btn" onclick="addMisc()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        Add Misc Item
+      </button>
+      <div class="note">Merchandise, donations, late entries, etc.</div>
+    </div>
+
+  </div>
+  <!-- ════════ END LEFT PANEL ════════ -->
+
+
+  <!-- ════════ RIGHT PANEL (ORDER) ════════ -->
+  <div class="right-panel">
+    <div class="order-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold2)" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Order Summary
+    </div>
+    <div class="order-buyer" id="orderBuyerLabel">—</div>
+    <div class="payment-method-badge card" id="payBadge">💳 Credit Card</div>
+
+    <div class="order-lines" id="orderLines">
+      <div class="order-empty">No items yet. Select options on the left.</div>
+    </div>
+
+    <div class="order-total-row">
+      <div class="order-total-label">Total</div>
+      <div class="order-total-amt" id="orderTotal">$0.00</div>
+    </div>
+
+    <button class="charge-btn" id="chargeBtn" onclick="openCharge()" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <span id="chargeBtnLabel">Charge $0.00</span>
+    </button>
+    <button class="clear-btn" onclick="clearAll()">Clear / New Transaction</button>
+
+    <!-- TRANSACTION LOG -->
+    <button class="log-toggle" onclick="toggleLog()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <span id="logToggleLabel">Transaction Log (0)</span>
+    </button>
+    <div class="log-panel" id="logPanel"></div>
+  </div>
+  <!-- ════════ END RIGHT PANEL ════════ -->
+
+</div>
+
+
+<!-- ════════ RECEIPT MODAL ════════ -->
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal">
+    <div class="modal-icon" id="modalIcon">✅</div>
+    <div class="modal-title" id="modalTitle">Transaction Complete</div>
+    <div class="modal-sub" id="modalSub">Review the receipt below</div>
+
+    <table class="receipt-table" id="receiptLines"></table>
+    <hr class="receipt-divider">
+    <table class="receipt-table">
+      <tr class="receipt-total-row">
+        <td>TOTAL</td>
+        <td id="receiptTotal"></td>
+      </tr>
+      <tr>
+        <td style="font-size:12px;color:var(--mid)">Payment</td>
+        <td style="font-size:12px;color:var(--mid)" id="receiptPayment"></td>
+      </tr>
+    </table>
+    <div class="receipt-meta" id="receiptMeta"></div>
+
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal()">Back</button>
+      <button class="modal-btn primary" onclick="confirmTransaction()">✓ Confirm &amp; Print</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── STATE ──────────────────────────────────────────────────
+var payMethod = 'card';
+var selectedDiv = 'inshore';
+var anglerCount = 1;
+var DIVISION_PRICES = { inshore: 100, offshore: 150, tarpon: 150 };
+var addons = {}; // id -> {name, price, flat, qty}
+var raffleQty = { single: 0, book: 0 };
+var auctionItems = []; // {id, desc, amount}
+var miscItems = [];    // {id, desc, amount}
+var auctionCounter = 0;
+var miscCounter = 0;
+var transactions = [];
+
+// ── PAYMENT METHOD ─────────────────────────────────────────
+function setPayment(method) {
+  payMethod = method;
+  document.getElementById('btn-card').classList.toggle('active', method === 'card');
+  document.getElementById('btn-cash').classList.toggle('active', method === 'cash');
+  var badge = document.getElementById('payBadge');
+  if (method === 'card') {
+    badge.className = 'payment-method-badge card';
+    badge.textContent = '💳 Credit Card';
+  } else {
+    badge.className = 'payment-method-badge cash';
+    badge.textContent = '💵 Cash';
+  }
+}
+
+// ── BUYER ──────────────────────────────────────────────────
+function updateBuyer() {
+  var fn = document.getElementById('fName').value.trim();
+  var ln = document.getElementById('lName').value.trim();
+  var full = [fn, ln].filter(Boolean).join(' ');
+  document.getElementById('orderBuyerLabel').textContent = full || '—';
+  calcTotal();
+}
+
+// ── DIVISION ───────────────────────────────────────────────
+function selectDiv(div) {
+  selectedDiv = div;
+  ['inshore','offshore','tarpon'].forEach(function(d) {
+    document.getElementById('divbtn-'+d).classList.toggle('active', d === div);
+    // hide the extra-div checkbox for the primary div
+    var cb = document.getElementById('extra-'+d);
+    if (cb) cb.closest('label').style.display = (d === div) ? 'none' : '';
+  });
+  updateAnglerNote();
+  calcTotal();
+}
+
+function changeAnglers(delta) {
+  anglerCount = Math.max(1, Math.min(10, anglerCount + delta));
+  document.getElementById('anglerNum').textContent = anglerCount;
+  updateAnglerNote();
+  calcTotal();
+}
+
+function updateAnglerNote() {
+  var price = DIVISION_PRICES[selectedDiv];
+  document.getElementById('anglerNote').textContent = anglerCount + ' × $' + price + ' = $' + (anglerCount * price).toFixed(2);
+}
+
+// ── ADDONS ─────────────────────────────────────────────────
+function toggleAddon(id, price, flat, name) {
+  if (addons[id]) {
+    delete addons[id];
+    document.getElementById('addon-'+id).classList.remove('active');
+    document.getElementById('cb-'+id).classList.remove('active');
+  } else {
+    addons[id] = { name: name, price: price, flat: flat };
+    document.getElementById('addon-'+id).classList.add('active');
+    document.getElementById('cb-'+id).classList.add('active');
+  }
+  calcTotal();
+}
+
+// ── RAFFLE ─────────────────────────────────────────────────
+function changeRaffle(type, delta) {
+  raffleQty[type] = Math.max(0, raffleQty[type] + delta);
+  document.getElementById('raffle-'+type).textContent = raffleQty[type];
+  calcTotal();
+}
+
+// ── AUCTION ────────────────────────────────────────────────
+function addAuction() {
+  var id = ++auctionCounter;
+  auctionItems.push({ id: id, desc: '', amount: '' });
+  renderVarItems('auctionItems', auctionItems, removeAuction, 'auction');
+}
+function removeAuction(id) {
+  auctionItems = auctionItems.filter(function(i){ return i.id !== id; });
+  renderVarItems('auctionItems', auctionItems, removeAuction, 'auction');
+  calcTotal();
+}
+
+// ── MISC ───────────────────────────────────────────────────
+function addMisc() {
+  var id = ++miscCounter;
+  miscItems.push({ id: id, desc: '', amount: '' });
+  renderVarItems('miscItems', miscItems, removeMisc, 'misc');
+}
+function removeMisc(id) {
+  miscItems = miscItems.filter(function(i){ return i.id !== id; });
+  renderVarItems('miscItems', miscItems, removeMisc, 'misc');
+  calcTotal();
+}
+
+function renderVarItems(containerId, items, removeFn, prefix) {
+  var container = document.getElementById(containerId);
+  container.innerHTML = '';
+  items.forEach(function(item) {
+    var row = document.createElement('div');
+    row.className = 'var-row';
+    row.id = prefix + '-row-' + item.id;
+    row.innerHTML =
+      '<input type="text" class="field input var-label" placeholder="Description…" style="flex:1;padding:7px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;" value="' + escHtml(item.desc) + '" oninput="updateVarDesc(\'' + prefix + '\',' + item.id + ',this.value)">' +
+      '<input type="number" class="var-input" placeholder="0.00" min="0" step="0.01" value="' + (item.amount || '') + '" oninput="updateVarAmt(\'' + prefix + '\',' + item.id + ',this.value)">' +
+      '<button class="remove-btn" onclick="' + (prefix === 'auction' ? 'removeAuction' : 'removeMisc') + '(' + item.id + ')">×</button>';
+    container.appendChild(row);
+  });
+}
+
+function updateVarDesc(prefix, id, val) {
+  var arr = prefix === 'auction' ? auctionItems : miscItems;
+  var item = arr.find(function(i){ return i.id === id; });
+  if (item) item.desc = val;
+  calcTotal();
+}
+function updateVarAmt(prefix, id, val) {
+  var arr = prefix === 'auction' ? auctionItems : miscItems;
+  var item = arr.find(function(i){ return i.id === id; });
+  if (item) item.amount = val;
+  calcTotal();
+}
+
+// ── CALCULATE TOTAL ────────────────────────────────────────
+function calcTotal() {
+  var lines = [];
+  var total = 0;
+
+  // Primary registration
+  var divPrice = DIVISION_PRICES[selectedDiv];
+  var regCost = anglerCount * divPrice;
+  var divName = {inshore:'🐟 Inshore',offshore:'🎣 Offshore',tarpon:'🦈 Tarpon'}[selectedDiv];
+  lines.push({ name: divName + ' Registration ×' + anglerCount, amount: regCost });
+  total += regCost;
+
+  // Extra divisions
+  ['inshore','offshore','tarpon'].forEach(function(d) {
+    if (d === selectedDiv) return;
+    var cb = document.getElementById('extra-'+d);
+    if (cb && cb.checked) {
+      var xp = DIVISION_PRICES[d] * anglerCount;
+      var xn = {inshore:'🐟 Inshore',offshore:'🎣 Offshore',tarpon:'🦈 Tarpon'}[d];
+      lines.push({ name: '+ ' + xn + ' Div. ×' + anglerCount, amount: xp });
+      total += xp;
+    }
+  });
+
+  // Addons
+  Object.keys(addons).forEach(function(id) {
+    var a = addons[id];
+    var cost = a.flat ? a.price : (a.price * anglerCount);
+    var label = a.name + (a.flat ? '' : ' ×' + anglerCount);
+    lines.push({ name: label, amount: cost });
+    total += cost;
+  });
+
+  // Raffle
+  if (raffleQty.single > 0) {
+    var rc = raffleQty.single * 5;
+    lines.push({ name: '🎟 Raffle ×' + raffleQty.single, amount: rc });
+    total += rc;
+  }
+  if (raffleQty.book > 0) {
+    var rb = raffleQty.book * 20;
+    lines.push({ name: '🎟 Raffle Books ×' + raffleQty.book, amount: rb });
+    total += rb;
+  }
+
+  // Auction
+  auctionItems.forEach(function(item) {
+    var amt = parseFloat(item.amount) || 0;
+    if (amt > 0 || item.desc) {
+      lines.push({ name: '🔨 ' + (item.desc || 'Auction Item'), amount: amt });
+      total += amt;
+    }
+  });
+
+  // Misc
+  miscItems.forEach(function(item) {
+    var amt = parseFloat(item.amount) || 0;
+    if (amt > 0 || item.desc) {
+      lines.push({ name: '📦 ' + (item.desc || 'Misc Item'), amount: amt });
+      total += amt;
+    }
+  });
+
+  // Render order lines
+  var ol = document.getElementById('orderLines');
+  if (lines.length === 0) {
+    ol.innerHTML = '<div class="order-empty">No items yet. Select options on the left.</div>';
+  } else {
+    ol.innerHTML = lines.map(function(l) {
+      return '<div class="order-line"><div class="order-line-name">' + escHtml(l.name) + '</div><div class="order-line-amt">$' + l.amount.toFixed(2) + '</div></div>';
+    }).join('');
+  }
+
+  document.getElementById('orderTotal').textContent = '$' + total.toFixed(2);
+  var btn = document.getElementById('chargeBtn');
+  var hasName = document.getElementById('fName').value.trim() || document.getElementById('lName').value.trim();
+  btn.disabled = (total <= 0 || !hasName);
+  document.getElementById('chargeBtnLabel').textContent = 'Charge $' + total.toFixed(2);
+
+  return { lines: lines, total: total };
+}
+
+// ── OPEN CHARGE MODAL ──────────────────────────────────────
+var pendingData = null;
+
+function openCharge() {
+  var data = calcTotal();
+  var fn = document.getElementById('fName').value.trim();
+  var ln = document.getElementById('lName').value.trim();
+  var name = [fn, ln].filter(Boolean).join(' ');
+  var member = document.getElementById('memberNum').value.trim();
+  var contact = document.getElementById('contact').value.trim();
+
+  pendingData = { lines: data.lines, total: data.total, name: name, member: member, contact: contact, payment: payMethod };
+
+  document.getElementById('modalIcon').textContent = payMethod === 'cash' ? '💵' : '💳';
+  document.getElementById('modalTitle').textContent = payMethod === 'cash' ? 'Collect Cash' : 'Process Card';
+  document.getElementById('modalSub').textContent = 'Confirm the order for ' + name;
+
+  var tBody = '';
+  data.lines.forEach(function(l) {
+    tBody += '<tr><td>' + escHtml(l.name) + '</td><td>$' + l.amount.toFixed(2) + '</td></tr>';
+  });
+  document.getElementById('receiptLines').innerHTML = tBody;
+  document.getElementById('receiptTotal').textContent = '$' + data.total.toFixed(2);
+  document.getElementById('receiptPayment').textContent = payMethod === 'cash' ? 'Cash' : 'Credit Card';
+  var meta = name + (member ? ' · Member #' + member : '') + (contact ? ' · ' + contact : '') + '\n' + new Date().toLocaleString();
+  document.getElementById('receiptMeta').textContent = meta;
+
+  document.getElementById('receiptModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('receiptModal').classList.remove('open');
+  pendingData = null;
+}
+
+function confirmTransaction() {
+  if (!pendingData) return;
+
+  // Log it
+  transactions.push(pendingData);
+  updateLog();
+
+  // Print (browser print dialog)
+  var printWin = window.open('', '_blank', 'width=400,height=600');
+  printWin.document.write(buildReceiptHtml(pendingData));
+  printWin.document.close();
+  setTimeout(function(){ printWin.print(); }, 400);
+
+  closeModal();
+  clearAll();
+}
+
+function buildReceiptHtml(data) {
+  var rows = data.lines.map(function(l){
+    return '<tr><td style="padding:5px 0">'+escHtml(l.name)+'</td><td style="text-align:right;padding:5px 0;font-weight:600">$'+l.amount.toFixed(2)+'</td></tr>';
+  }).join('');
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt</title><style>body{font-family:Arial,sans-serif;font-size:13px;max-width:320px;margin:0 auto;padding:16px}h2{font-size:15px;margin-bottom:2px}p{margin:2px 0;color:#555;font-size:12px}table{width:100%;border-collapse:collapse;margin:12px 0}hr{border:none;border-top:1px solid #ddd}tfoot td{font-weight:700;font-size:14px;padding-top:8px}.footer{font-size:11px;color:#888;text-align:center;margin-top:12px}</style></head><body><h2>⚓ Rough Riders Fishing Tournament</h2><p>31st Annual · Treasure Island, FL</p><hr><p><strong>'+escHtml(data.name)+'</strong>'+(data.member?' · Member #'+escHtml(data.member):'')+'</p><p>Payment: '+(data.payment==='cash'?'Cash':'Credit Card')+'</p><p>'+new Date().toLocaleString()+'</p><table><tbody>'+rows+'</tbody><tfoot><tr><td>TOTAL</td><td style="text-align:right">$'+data.total.toFixed(2)+'</td></tr></tfoot></table><div class="footer">Thank you for supporting the Rough Riders!</div></body></html>';
+}
+
+// ── CLEAR ─────────────────────────────────────────────────
+function clearAll() {
+  document.getElementById('fName').value = '';
+  document.getElementById('lName').value = '';
+  document.getElementById('memberNum').value = '';
+  document.getElementById('contact').value = '';
+
+  selectedDiv = 'inshore';
+  anglerCount = 1;
+  addons = {};
+  raffleQty = { single: 0, book: 0 };
+  auctionItems = [];
+  miscItems = [];
+  auctionCounter = 0;
+  miscCounter = 0;
+
+  // Reset UI
+  ['inshore','offshore','tarpon'].forEach(function(d){
+    document.getElementById('divbtn-'+d).classList.toggle('active', d === 'inshore');
+    var cb = document.getElementById('extra-'+d);
+    if (cb) { cb.checked = false; cb.closest('label').style.display = d === 'inshore' ? 'none' : ''; }
+  });
+  ['dinner','tshirt','bait','cooler','photo','wristband'].forEach(function(id){
+    document.getElementById('addon-'+id).classList.remove('active');
+    document.getElementById('cb-'+id).classList.remove('active');
+  });
+  document.getElementById('raffle-single').textContent = '0';
+  document.getElementById('raffle-book').textContent = '0';
+  document.getElementById('auctionItems').innerHTML = '';
+  document.getElementById('miscItems').innerHTML = '';
+  document.getElementById('anglerNum').textContent = '1';
+
+  updateBuyer();
+  updateAnglerNote();
+  calcTotal();
+}
+
+// ── TRANSACTION LOG ────────────────────────────────────────
+function updateLog() {
+  var panel = document.getElementById('logPanel');
+  document.getElementById('logToggleLabel').textContent = 'Transaction Log (' + transactions.length + ')';
+  panel.innerHTML = transactions.slice().reverse().map(function(t, i) {
+    var ts = i === 0 ? 'Just now' : '';
+    return '<div class="log-entry"><span class="log-name">' + escHtml(t.name) + '</span> · <span class="log-amt">$' + t.total.toFixed(2) + '</span><br>' + (t.payment === 'cash' ? '💵 Cash' : '💳 Card') + (t.member ? ' · #' + t.member : '') + '</div>';
+  }).join('');
+}
+
+function toggleLog() {
+  var panel = document.getElementById('logPanel');
+  panel.classList.toggle('open');
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──────────────────────────────────────────────────
+selectDiv('inshore');
+updateAnglerNote();
+calcTotal();
+</script>
+</body>
+</html>
