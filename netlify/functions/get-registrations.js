@@ -6,7 +6,6 @@ function cognitoGet(path) {
     if (!apiKey) { reject(new Error('COGNITO_API_KEY not set')); return; }
     const options = {
       hostname: 'www.cognitoforms.com',
-      // No /api/1/ prefix — correct base is /api/
       path: `/api/${path}`,
       method: 'GET',
       headers: {
@@ -27,6 +26,9 @@ function cognitoGet(path) {
   });
 }
 
+// Form 187 InternalName = _2026RoughRidersCharityFishingTournamentEntry
+const FORM_NAME = '_2026RoughRidersCharityFishingTournamentEntry';
+
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders(), body: '' };
@@ -36,14 +38,12 @@ exports.handler = async function (event) {
 
   try {
     if (debug) {
-      // The correct Cognito Forms API base is /api/ (no version)
-      // Form number in the URL is the sequential form number, not internal ID
-      // Form 187 internal ID maps to a public form number — try both
       const results = {};
       const paths = [
-        'forms',                          // list all forms
-        'forms/187/entries',              // internal ID
-        'forms/187/entries?take=5',
+        `forms/${FORM_NAME}/entries?take=5`,
+        `forms/${FORM_NAME}/entries`,
+        // Also try the org-scoped path some Cognito plans use
+        `forms/187/entries?take=5`,
       ];
       for (const p of paths) {
         try { results[p] = await cognitoGet(p); }
@@ -52,18 +52,18 @@ exports.handler = async function (event) {
       return {
         statusCode: 200,
         headers: corsHeaders(),
-        body: JSON.stringify({ debug: true, basePath: '/api/', results }),
+        body: JSON.stringify({ debug: true, formName: FORM_NAME, results }),
       };
     }
 
-    // Fetch entries for form 187
-    const result = await cognitoGet('forms/187/entries?take=200');
-    const raw = result.body;
+    // Fetch all entries using InternalName
+    const result = await cognitoGet(`forms/${FORM_NAME}/entries?take=200`);
 
     if (result.status !== 200) {
-      throw new Error('Cognito returned ' + result.status + ': ' + JSON.stringify(raw).substring(0, 200));
+      throw new Error('Cognito ' + result.status + ': ' + JSON.stringify(result.body).substring(0, 200));
     }
 
+    const raw = result.body;
     const list = Array.isArray(raw) ? raw
                : Array.isArray(raw.entries) ? raw.entries
                : [];
@@ -71,9 +71,14 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({ entries: list.map(mapEntry), count: list.length, fetchedAt: new Date().toISOString() }),
+      body: JSON.stringify({
+        entries: list.map(mapEntry),
+        count: list.length,
+        fetchedAt: new Date().toISOString()
+      }),
     };
   } catch (err) {
+    console.error('get-registrations error:', err);
     return {
       statusCode: 500,
       headers: corsHeaders(),
@@ -84,20 +89,20 @@ exports.handler = async function (event) {
 
 function mapEntry(e) {
   return {
-    id: e.Id || '',
-    name: e.ContactInformation_Name || '',
-    teamName: e.ContactInformation_TeamName || '',
-    divisions: e.ContactInformation_TournamentDivision_Divisions || '',
-    divisionsComp: e.ContactInformation_TournamentDivision_DivisionsComp || '',
+    id:           e.Id || '',
+    name:         e.ContactInformation_Name || '',
+    teamName:     e.ContactInformation_TeamName || '',
+    divisions:    e.ContactInformation_TournamentDivision_Divisions || '',
+    divisionsComp:e.ContactInformation_TournamentDivision_DivisionsComp || '',
     twt: [
       e.ContactInformation_TournamentDivision_TWTInshore  || '',
       e.ContactInformation_TournamentDivision_TWTOffshore || '',
       e.ContactInformation_TournamentDivision_TWTTarpon   || '',
     ].filter(Boolean).join(','),
-    isBoat: e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true,
-    boatNumber: e.BoatNumber || null,
-    amountPaid: e.Order_OrderAmount || 0,
-    sponsor: e.SponsorName || null,
+    isBoat:       e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true,
+    boatNumber:   e.BoatNumber || null,
+    amountPaid:   e.Order_OrderAmount || 0,
+    sponsor:      e.SponsorName || null,
   };
 }
 
