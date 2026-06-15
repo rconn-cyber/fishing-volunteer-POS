@@ -1,5 +1,9 @@
 const https = require('https');
 
+// Org slug from Admin links: _1stUSVolunteerCavalryRegimentRoughRidersInc
+const ORG  = '_1stUSVolunteerCavalryRegimentRoughRidersInc';
+const FORM = '_2026RoughRidersCharityFishingTournamentEntry';
+
 function cognitoGet(path) {
   return new Promise((resolve, reject) => {
     const apiKey = process.env.COGNITO_API_KEY;
@@ -18,16 +22,13 @@ function cognitoGet(path) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch (e) { resolve({ status: res.statusCode, body: data.substring(0, 500) }); }
+        catch (e) { resolve({ status: res.statusCode, body: data.substring(0, 300) }); }
       });
     });
     req.on('error', reject);
     req.end();
   });
 }
-
-// Form 187 InternalName = _2026RoughRidersCharityFishingTournamentEntry
-const FORM_NAME = '_2026RoughRidersCharityFishingTournamentEntry';
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -40,10 +41,13 @@ exports.handler = async function (event) {
     if (debug) {
       const results = {};
       const paths = [
-        `forms/${FORM_NAME}/entries?take=5`,
-        `forms/${FORM_NAME}/entries`,
-        // Also try the org-scoped path some Cognito plans use
-        `forms/187/entries?take=5`,
+        // Org-scoped paths (from admin URL pattern)
+        `${ORG}/forms/187/entries?take=3`,
+        `${ORG}/forms/${FORM}/entries?take=3`,
+        // Without org prefix but with InternalName
+        `forms/${FORM}/entries?take=3`,
+        // Lowered
+        `forms/${FORM.toLowerCase()}/entries?take=3`,
       ];
       for (const p of paths) {
         try { results[p] = await cognitoGet(p); }
@@ -52,13 +56,15 @@ exports.handler = async function (event) {
       return {
         statusCode: 200,
         headers: corsHeaders(),
-        body: JSON.stringify({ debug: true, formName: FORM_NAME, results }),
+        body: JSON.stringify({ debug: true, results }),
       };
     }
 
-    // Fetch all entries using InternalName
-    const result = await cognitoGet(`forms/${FORM_NAME}/entries?take=200`);
-
+    // Try org-scoped path first (most likely correct based on admin URL pattern)
+    let result = await cognitoGet(`${ORG}/forms/187/entries?take=200`);
+    if (result.status === 404) {
+      result = await cognitoGet(`forms/${FORM}/entries?take=200`);
+    }
     if (result.status !== 200) {
       throw new Error('Cognito ' + result.status + ': ' + JSON.stringify(result.body).substring(0, 200));
     }
@@ -71,38 +77,30 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({
-        entries: list.map(mapEntry),
-        count: list.length,
-        fetchedAt: new Date().toISOString()
-      }),
+      body: JSON.stringify({ entries: list.map(mapEntry), count: list.length, fetchedAt: new Date().toISOString() }),
     };
   } catch (err) {
-    console.error('get-registrations error:', err);
-    return {
-      statusCode: 500,
-      headers: corsHeaders(),
-      body: JSON.stringify({ error: err.message }),
-    };
+    console.error(err);
+    return { statusCode: 500, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
   }
 };
 
 function mapEntry(e) {
   return {
-    id:           e.Id || '',
-    name:         e.ContactInformation_Name || '',
-    teamName:     e.ContactInformation_TeamName || '',
-    divisions:    e.ContactInformation_TournamentDivision_Divisions || '',
-    divisionsComp:e.ContactInformation_TournamentDivision_DivisionsComp || '',
+    id:            e.Id || '',
+    name:          e.ContactInformation_Name || '',
+    teamName:      e.ContactInformation_TeamName || '',
+    divisions:     e.ContactInformation_TournamentDivision_Divisions || '',
+    divisionsComp: e.ContactInformation_TournamentDivision_DivisionsComp || '',
     twt: [
       e.ContactInformation_TournamentDivision_TWTInshore  || '',
       e.ContactInformation_TournamentDivision_TWTOffshore || '',
       e.ContactInformation_TournamentDivision_TWTTarpon   || '',
     ].filter(Boolean).join(','),
-    isBoat:       e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true,
-    boatNumber:   e.BoatNumber || null,
-    amountPaid:   e.Order_OrderAmount || 0,
-    sponsor:      e.SponsorName || null,
+    isBoat:     e.AreYouEnteringABoat === 'Yes' || e.AreYouEnteringABoat === true,
+    boatNumber: e.BoatNumber || null,
+    amountPaid: e.Order_OrderAmount || 0,
+    sponsor:    e.SponsorName || null,
   };
 }
 
