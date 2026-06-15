@@ -1,54 +1,945 @@
-<!-- ============================================================
-  POS index.html — PATCH GUIDE
-  Repo: rconn-cyber/fishing-volunteer-POS
-  ============================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rough Riders · Registration Table</title>
+<script src="https://js.stripe.com/v3/"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0d1f3c; --navy2:#152d54; --gold:#c9a84c; --gold2:#e8c870;
+  --golddim:#a07830; --water:#0a4a6e; --red:#b92b2b; --green:#1a6b3c;
+  --bg:#f0f2f5; --card:#fff; --border:#dde2ec; --mid:#5a6880; --dark:#1a1a2e;
+  --shadow:0 2px 12px rgba(13,31,60,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
 
-  TWO changes needed:
-    A) Add "Boat Name" input field in the buyer info section
-    B) Call save-boat after finalize() for walk-up registrations
+/* ── HEADER ── */
+.hdr{background:var(--navy);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:300}
+.hbrand{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--gold2);letter-spacing:.06em;text-transform:uppercase}
+.hsub{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.1em;text-transform:uppercase}
+.hright{display:flex;align-items:center;gap:10px}
+.hbadge{background:var(--red);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:4px}
+.stats-bar{display:flex;gap:6px}
+.stat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap}
+.stat span{color:var(--gold2)}
 
-  ============================================================
-  A) ADD BOAT NAME FIELD
-  ============================================================
-  Find the existing buyer info fields block. It currently has:
-    pName, pMember, pEmail  (and possibly pPhone)
+/* ── TABS ── */
+.tabs{display:flex;background:var(--navy2);border-bottom:2px solid rgba(201,168,76,.2);padding:0 16px;gap:2px;position:sticky;top:56px;z-index:210}
+.tab{padding:10px 18px;background:none;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);transition:all .15s;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab:hover{color:rgba(255,255,255,.75)}
+.tab.on{color:var(--gold2);border-bottom-color:var(--gold)}
 
-  After the pName field, add:
+/* ── SEARCH BAR ── */
+.searchbar{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;position:sticky;top:102px;z-index:200}
+.srch{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Barlow',sans-serif;font-size:15px;outline:none;transition:border-color .15s}
+.srch:focus{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.1)}
+.filter-btns{display:flex;gap:6px}
+.fbtn{padding:7px 12px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .15s;white-space:nowrap}
+.fbtn:hover{border-color:var(--water);color:var(--water)}
+.fbtn.on{background:var(--navy);color:var(--gold2);border-color:var(--navy)}
+.reload-btn{padding:8px 12px;background:var(--water);color:#fff;border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.reload-btn:hover{filter:brightness(1.15)}
+.reload-btn:disabled{opacity:.5;cursor:not-allowed}
+.walkup-btn{padding:8px 14px;background:var(--green);color:#fff;border:none;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap}
+.walkup-btn:hover{filter:brightness(1.12)}
 
-    <div class="pf" id="boatNameRow" style="display:none">
-      <label for="pBoatName">Boat Name</label>
-      <input id="pBoatName" type="text" placeholder="e.g. Reel Trouble" autocomplete="off">
+/* ── ROSTER TABLE ── */
+.roster-wrap{padding:12px 16px}
+.loading{text-align:center;padding:40px;color:var(--mid);font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.1em}
+.roster-table{width:100%;border-collapse:collapse;font-size:14px}
+.roster-table th{background:var(--navy);color:var(--gold2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:9px 12px;text-align:left;position:sticky;top:156px;z-index:100}
+.roster-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.roster-table tr:hover td{background:#f7f9ff}
+.roster-table tr.checked-in td{background:#f0fff4}
+.roster-table tr.checked-in .pname{text-decoration:line-through;color:var(--mid)}
+
+/* Row badges */
+.boat-badge{display:inline-flex;align-items:center;gap:4px;background:#eef2ff;color:var(--navy);border:1px solid #c5cee8;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.06em;padding:2px 7px}
+.ticket-badge{display:inline-flex;align-items:center;gap:4px;background:#fff8ec;color:var(--golddim);border:1px solid #e8d99a;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.06em;padding:2px 7px}
+.comp-badge{background:#f0fff4;color:var(--green);border:1px solid #86efac;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;padding:2px 7px}
+.div-pill{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em;margin:1px}
+.div-I{background:#dbeafe;color:#1d4ed8}
+.div-O{background:#dcfce7;color:#166534}
+.div-T{background:#fef3c7;color:#92400e}
+.chk-btn{padding:6px 14px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .14s;white-space:nowrap}
+.chk-btn.in{background:var(--green);color:#fff}
+.chk-btn.in:hover{filter:brightness(1.1)}
+.chk-btn.out{background:#f0f2f5;color:var(--mid);border:1px solid var(--border)}
+.chk-btn.out:hover{border-color:var(--green);color:var(--green)}
+.sel-btn{padding:6px 12px;border:none;border-radius:6px;background:var(--navy);color:var(--gold2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .14s;white-space:nowrap}
+.sel-btn:hover{background:var(--navy2)}
+.boat-num-input{width:52px;padding:5px 7px;border:1.5px solid var(--border);border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;text-align:center;outline:none}
+.boat-num-input:focus{border-color:var(--water)}
+
+/* ── POS PANEL (right side) ── */
+.page-wrap{display:flex;gap:0;min-height:calc(100vh - 56px)}
+.main-col{flex:1;overflow-y:auto;min-width:0}
+.pos-col{width:420px;flex-shrink:0;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+@media(max-width:1100px){.page-wrap{flex-direction:column}.pos-col{width:100%;position:static;height:auto}}
+
+/* POS panel internals */
+.pos-hdr{padding:16px 20px;border-bottom:1px solid var(--border);background:#f7f9ff}
+.pos-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pos-context{font-size:14px;color:var(--mid);min-height:18px}
+.pos-mode-badge{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:5px;display:inline-block;margin-top:6px}
+.pos-mode-badge.walkin{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.pos-mode-badge.checkin{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.pos-mode-badge.addon{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+
+.pos-body{flex:1;padding:16px 20px;overflow-y:auto}
+.pos-section{margin-bottom:16px}
+.pos-section-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mid);margin-bottom:10px}
+
+/* Buyer fields in POS */
+.pf{margin-bottom:10px}
+.pf label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);margin-bottom:4px}
+.pf input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Barlow',sans-serif;font-size:15px;color:var(--dark);background:#fff;outline:none;transition:border-color .15s}
+.pf input:focus{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.08)}
+.pf input::placeholder{color:#b0bcd0}
+
+/* Payment toggle */
+.ptog{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:12px}
+.pbtn{flex:1;padding:10px 8px;background:#f7f9ff;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;color:var(--mid);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.pbtn.on{background:var(--navy);color:var(--gold2)}
+.pbtn:not(:last-child){border-right:1.5px solid var(--border)}
+
+/* Division cards (light theme) */
+.div-grid-dark{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.dcard{border:1.5px solid var(--border);border-radius:9px;padding:12px 8px;cursor:pointer;background:#fff;transition:all .13s;text-align:center;user-select:none;position:relative}
+.dcard:hover{border-color:var(--water);background:#f0f6ff}
+.dcard.on{border-color:var(--navy);background:#eef2ff}
+.dcard .di{font-size:24px;margin-bottom:4px}
+.dcard .dn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--navy)}
+.dcard .dp{font-size:11px;color:var(--golddim);margin-top:2px}
+.dcard .chk{position:absolute;top:5px;right:6px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff}
+.dcard.on .chk{background:var(--navy);border-color:var(--navy)}
+.dcard.on .chk::after{content:'✓'}
+
+/* TWT light */
+.twt-dark{background:#fffbec;border:1px solid #e8d99a;border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.twt-dark-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--golddim);margin-bottom:8px}
+.twt-dark-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tcard{border:1px solid var(--border);border-radius:7px;padding:9px 6px;cursor:pointer;background:#fff;transition:all .12s;text-align:center;opacity:.35;pointer-events:none;user-select:none}
+.tcard.elig{opacity:1;pointer-events:auto}
+.tcard.elig:hover{border-color:var(--golddim);background:#fffbf0}
+.tcard.on{border-color:var(--gold);background:#fffbec;opacity:1;pointer-events:auto}
+.tcard .ti{font-size:16px}
+.tcard .tn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--navy);margin-top:2px}
+
+/* Ticket qty light */
+.trow-dark{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.trow-dark label{font-size:14px;color:var(--mid);flex:1}
+.qc-dark{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:6px;overflow:hidden}
+.qb-dark{width:32px;height:32px;border:none;background:#f7f9ff;font-size:16px;cursor:pointer;color:var(--navy);display:flex;align-items:center;justify-content:center}
+.qb-dark:hover{background:#e8edf5}
+.qn-dark{width:36px;text-align:center;font-weight:700;font-size:15px;color:var(--navy);border-left:1.5px solid var(--border);border-right:1.5px solid var(--border);padding:3px 0}
+
+/* Order lines */
+.olines{border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px}
+.oline{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:var(--dark);border-bottom:1px solid var(--border);gap:8px}
+.oln{flex:1}
+.ola{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--navy);flex-shrink:0}
+.oempty{color:#b0bcd0;font-size:13px;font-style:italic;padding:10px 0}
+.otrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:2px solid var(--border)}
+.otlbl{font-family:'Barlow Condensed',sans-serif;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid)}
+.otamt{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:32px;color:var(--navy)}
+
+/* Charge button */
+.cbtn{width:100%;padding:15px;background:linear-gradient(135deg,var(--navy),var(--navy2));color:var(--gold2);border:none;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.cbtn:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 6px 20px rgba(13,31,60,.25)}
+.cbtn:disabled{opacity:.35;cursor:not-allowed;transform:none;filter:none;box-shadow:none}
+.clrbtn{width:100%;padding:10px;margin-top:8px;background:#f0f2f5;color:var(--mid);border:1px solid var(--border);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .14s}
+.clrbtn:hover{background:var(--border);color:var(--dark)}
+
+/* MODAL */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;align-items:center;justify-content:center;padding:16px}
+.moverlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:440px;padding:24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto}
+.micon{text-align:center;font-size:36px;margin-bottom:8px}
+.mttl{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;text-align:center;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.msub{text-align:center;font-size:13px;color:var(--mid);margin-bottom:14px}
+.card-el-wrap{border:1.5px solid var(--border);border-radius:8px;padding:12px;background:#fff;margin-bottom:12px}
+.card-el-wrap:focus-within{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.1)}
+.cel-lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+#card-errors{color:var(--red);font-size:12px;margin-top:5px;min-height:16px}
+.rtbl{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px}
+.rtbl td{padding:4px 0;color:var(--dark)}
+.rtbl td:last-child{text-align:right;font-weight:600}
+.rtrow td{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:var(--navy);padding-top:6px}
+.rmeta{font-size:11px;color:var(--mid);text-align:center;margin-bottom:12px;line-height:1.6}
+.errbanner{background:#fff0f0;border:1.5px solid #f5b8b8;border-radius:7px;padding:9px 11px;color:var(--red);font-size:12px;margin-bottom:10px;display:none}
+.mbtns{display:flex;gap:8px}
+.mbtn2{flex:1;padding:10px;border-radius:7px;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;transition:all .14s;display:flex;align-items:center;justify-content:center;gap:5px}
+.mbtn2.pri{background:var(--navy);color:var(--gold2)}
+.mbtn2.pri:hover:not(:disabled){background:var(--navy2)}
+.mbtn2.pri:disabled{opacity:.5;cursor:not-allowed}
+.mbtn2.sec{background:var(--bg);color:var(--mid);border:1.5px solid var(--border)}
+.mbtn2.sec:hover{background:var(--border)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(201,168,76,.3);border-top-color:var(--gold2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.rdiv{border:none;border-top:1px solid var(--border);margin:6px 0}
+.note{font-size:11px;color:var(--mid);font-style:italic;margin-top:4px}
+.no-results{text-align:center;padding:32px;color:var(--mid);font-size:14px}
+.walkup-link{text-align:center;padding:8px;font-size:13px;color:var(--mid)}
+.walkup-link a{color:var(--water);font-weight:600;cursor:pointer;text-decoration:none}
+.walkup-link a:hover{text-decoration:underline}
+
+/* checked-in count chip */
+.ci-chip{background:rgba(26,107,60,.25);color:#6ee09a;border:1px solid rgba(110,224,154,.2);border-radius:5px;padding:3px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px}
+
+/* ── HELP TAB ── */
+.help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:4px 0 16px}
+.help-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
+.help-icon{font-size:28px;margin-bottom:8px}
+.help-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;letter-spacing:.04em;color:var(--navy);margin-bottom:10px;text-transform:uppercase}
+.help-steps{padding-left:18px;color:var(--dark);font-size:14px;line-height:1.7}
+.help-steps li{margin-bottom:4px}
+.help-steps strong{color:var(--navy)}
+.hbadge-green{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px}
+.hbadge-gold{background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:4px;padding:1px 7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px}
+.help-footer{background:#f7f9ff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--mid);text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hbrand">⚓ Rough Riders · Fishing Tournament</div>
+    <div class="hsub">Registration Table · 31st Annual · June 19–20, 2026</div>
+  </div>
+  <div class="hright">
+    <div class="stats-bar" id="statsBar">
+      <div class="stat">Boats <span id="statBoats">—</span></div>
+      <div class="stat">Tickets <span id="statTickets">—</span></div>
+      <div class="stat ci-chip" id="statCheckin">Checked In: 0</div>
+    </div>
+    <div class="hbadge">🔒 Staff Only</div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+<!-- ════════ LEFT: ROSTER ════════ -->
+<div class="main-col">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab on" id="tab-roster" onclick="showTab('roster')">📋 Roster</button>
+    <button class="tab" id="tab-log" onclick="showTab('log')">📄 Transaction Log</button>
+    <button class="tab" id="tab-help" onclick="showTab('help')">❓ How To</button>
+  </div>
+
+  <!-- Search & filters -->
+  <div class="searchbar">
+    <input class="srch" id="searchInput" placeholder="🔍  Search name, team, captain…" oninput="filterRoster()" autocomplete="off">
+    <div class="filter-btns">
+      <button class="fbtn on" id="filter-all" onclick="setFilter('all')">All</button>
+      <button class="fbtn" id="filter-boats" onclick="setFilter('boats')">🚤 Boats</button>
+      <button class="fbtn" id="filter-tickets" onclick="setFilter('tickets')">🎟 Tickets</button>
+      <button class="fbtn" id="filter-notchecked" onclick="setFilter('notchecked')">⏳ Not In</button>
+    </div>
+    <button class="reload-btn" id="reloadBtn" onclick="loadRoster()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Refresh
+    </button>
+    <button class="walkup-btn" onclick="startWalkup()">
+      ＋ Walk-Up
+    </button>
+  </div>
+
+  <!-- Roster content -->
+  <div class="roster-wrap" id="rosterTab">
+    <div class="loading" id="loadingMsg">Loading registrations from Cognito…</div>
+    <table class="roster-table" id="rosterTable" style="display:none">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name / Team</th>
+          <th>Type</th>
+          <th>Division(s)</th>
+          <th>Boat #</th>
+          <th>Paid</th>
+          <th>Check In</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+    <div class="no-results" id="noResults" style="display:none">No matching registrants found.</div>
+    <div class="walkup-link">
+      Walk-up not in the list? <a onclick="startWalkup()">→ Start walk-up registration</a>
+    </div>
+  </div>
+
+  <!-- Log tab -->
+  <div class="roster-wrap" id="logTab" style="display:none">
+    <div id="logContent" style="color:var(--mid);font-size:13px;padding:20px">No transactions yet this session.</div>
+  </div>
+
+  <!-- Help tab -->
+  <div class="roster-wrap" id="helpTab" style="display:none">
+    <div class="help-grid">
+
+      <div class="help-card">
+        <div class="help-icon">✅</div>
+        <div class="help-title">Check In a Pre-Registered Person</div>
+        <ol class="help-steps">
+          <li>Search their name in the search bar above.</li>
+          <li>Click <strong>Select →</strong> on their row — they are automatically marked checked in.</li>
+          <li>The POS panel opens in <span class="hbadge-green">Add-On</span> mode. If they owe nothing extra, just click <strong>Clear / New Transaction</strong> and move on.</li>
+          <li>If they want to add divisions, TWT, or tickets — select those items, then charge.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">🎣</div>
+        <div class="help-title">Walk-Up — New Boat Registration</div>
+        <ol class="help-steps">
+          <li>Click the green <strong>＋ Walk-Up</strong> button in the search bar.</li>
+          <li>Enter the captain's name and member number (leave blank if non-member).</li>
+          <li>Select division(s) — <strong>Inshore, Offshore, and/or Tarpon</strong> ($100 each). The $300 boat fee is added automatically.</li>
+          <li>Optionally add TWT ($100/div), weekend tickets, or raffle tickets.</li>
+          <li>Choose <strong>Card</strong> or <strong>Cash</strong>, then click <strong>Charge</strong>.</li>
+          <li>Confirm the order in the popup, swipe/enter the card, and a receipt prints automatically.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">➕</div>
+        <div class="help-title">Add Divisions or TWT to Existing Registration</div>
+        <ol class="help-steps">
+          <li>Find the person in the roster and click <strong>Select →</strong>.</li>
+          <li>The POS opens in <span class="hbadge-gold">Add-On</span> mode — no boat fee is charged again.</li>
+          <li>Select the additional division(s) they are adding ($100 each).</li>
+          <li>To add TWT, select the division first — TWT tiles activate once a division is selected.</li>
+          <li>Charge as normal.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">🎟</div>
+        <div class="help-title">Sell Weekend Event Tickets</div>
+        <ol class="help-steps">
+          <li>Find the person (or start a walk-up for a non-registrant).</li>
+          <li>Scroll down to <strong>Weekend Tickets</strong> in the POS panel.</li>
+          <li>Use <strong>＋ / −</strong> to set quantities:<br>
+            🎫 Captains Meeting — $20<br>
+            🎟 Pool Party — $20<br>
+            🍽 Awards Banquet — $60<br>
+            🎫 All-Access (all three) — $90
+          </li>
+          <li>Add raffle tickets if needed (50/50 or Yeti Cooler — $20 each).</li>
+          <li>Charge via card or cash.</li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">🚤</div>
+        <div class="help-title">Assign a Boat Number</div>
+        <ol class="help-steps">
+          <li>Find the boat in the roster — look for the <strong>Boat #</strong> column.</li>
+          <li>Click the input field in that column and type the assigned boat number.</li>
+          <li>Press Tab or click away — it saves automatically in this session.</li>
+          <li><em>Note: boat numbers are session-only and not saved back to Cognito.</em></li>
+        </ol>
+      </div>
+
+      <div class="help-card">
+        <div class="help-icon">💵</div>
+        <div class="help-title">Cash Transactions</div>
+        <ol class="help-steps">
+          <li>Select <strong>Cash</strong> in the Payment toggle before charging.</li>
+          <li>The confirm popup will show the total to collect — no card entry needed.</li>
+          <li>Click <strong>Confirm &amp; Print</strong> — a receipt prints and the transaction is logged.</li>
+          <li>Cash sales still record buyer name, member #, and items in the session log (📄 Transaction Log tab).</li>
+        </ol>
+      </div>
+
     </div>
 
-  Then in startWalkup() (around line 722), add this after
-  the existing field clears so it shows when walk-up opens:
+    <div class="help-footer">
+      Prices: Boat Entry $300 · Division $100 · TWT $100/div · Captains Mtg $20 · Pool Party $20 · Banquet $60 · All-Access $90 · Raffle $20
+    </div>
+  </div>
 
-    document.getElementById('boatNameRow').style.display = '';
+</div><!-- main-col -->
 
-  And in clearPOS() / clearWalkup(), add:
+<!-- ════════ RIGHT: POS PANEL ════════ -->
+<div class="pos-col" id="posPanel">
 
-    document.getElementById('pBoatName').value = '';
-    document.getElementById('boatNameRow').style.display = 'none';
+  <div class="pos-hdr">
+    <div class="pos-title">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold2)" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Registration POS
+    </div>
+    <div class="pos-context" id="posContext">Select a registrant or start a walk-up</div>
+    <div class="pos-mode-badge walkin" id="posModeBadge">👆 Select / Walk-Up</div>
+  </div>
 
-  ============================================================
-  B) CALL save-boat IN finalize()
-  ============================================================
-  The current finalize() function ends with:
-    closeModal(); clearPOS();
+  <div class="pos-body">
 
-  Replace the entire finalize() function with:
--->
+    <!-- Buyer info -->
+    <div class="pos-section">
+      <div class="pos-section-title">Buyer Info</div>
+      <div class="pf"><label>Name *</label><input id="pName" placeholder="Captain / Buyer name" oninput="calcTotal()" autocomplete="off"></div>
+      <div class="pf" id="boatNameRow" style="display:none"><label>Boat Name</label><input id="pBoatName" type="text" placeholder="e.g. Reel Trouble" autocomplete="off"></div>
+      <div class="pf"><label>Member #</label><input id="pMember" placeholder="blank = 999999 (non-member)" autocomplete="off" oninput="calcTotal()"></div>
+      <div class="pf"><label>Phone</label><input id="pPhone" type="tel" placeholder="(813) 555-0100" autocomplete="off"></div>
+      <div class="pf"><label>Email</label><input id="pEmail" type="email" placeholder="for Stripe receipt" autocomplete="off"></div>
+    </div>
+
+    <!-- Payment -->
+    <div class="pos-section">
+      <div class="pos-section-title">Payment</div>
+      <div class="ptog">
+        <button class="pbtn on" id="pbtn-card" onclick="setPay('card')">💳 Card</button>
+        <button class="pbtn" id="pbtn-cash" onclick="setPay('cash')">💵 Cash</button>
+      </div>
+    </div>
+
+    <!-- Registration (shown for walk-up or add-on mode) -->
+    <div id="regSection">
+      <div class="pos-section">
+        <div class="pos-section-title" id="regSectionTitle">Boat Registration</div>
+        <div id="boatFeeRow" style="display:flex;align-items:center;justify-content:space-between;background:#eef4ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:12px">
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:var(--water)">🚤 Boat Entry Fee</div>
+            <div style="font-size:12px;color:var(--mid);margin-top:2px">Auto-included with 1+ division</div>
+          </div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;color:var(--water)">$300</div>
+        </div>
+
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px" id="divLabel">Divisions — $100 each</div>
+        <div class="div-grid-dark">
+          <div class="dcard" id="dcard-inshore" onclick="togDiv('inshore')">
+            <div class="chk"></div><div class="di">🐟</div><div class="dn">Inshore</div><div class="dp">$100</div>
+          </div>
+          <div class="dcard" id="dcard-offshore" onclick="togDiv('offshore')">
+            <div class="chk"></div><div class="di">🎣</div><div class="dn">Offshore</div><div class="dp">$100</div>
+          </div>
+          <div class="dcard" id="dcard-tarpon" onclick="togDiv('tarpon')">
+            <div class="chk"></div><div class="di">🦈</div><div class="dn">Tarpon</div><div class="dp">$100</div>
+          </div>
+        </div>
+
+        <div class="twt-dark">
+          <div class="twt-dark-title">🏆 TWT — $100/div (opt-in at door)</div>
+          <div class="twt-dark-grid">
+            <div class="tcard" id="tcard-inshore" onclick="togTwt('inshore')"><div class="ti">🐟</div><div class="tn">Inshore</div></div>
+            <div class="tcard" id="tcard-offshore" onclick="togTwt('offshore')"><div class="ti">🎣</div><div class="tn">Offshore</div></div>
+            <div class="tcard" id="tcard-tarpon" onclick="togTwt('tarpon')"><div class="ti">🦈</div><div class="tn">Tarpon</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tickets (always shown) -->
+    <div class="pos-section">
+      <div class="pos-section-title">Weekend Tickets</div>
+      <div class="trow-dark"><label>🎫 Captains Mtg — $20</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgTkt('cap',-1)">−</button><div class="qn-dark" id="tkt-cap">0</div><button class="qb-dark" onclick="chgTkt('cap',1)">+</button></div>
+      </div>
+      <div class="trow-dark"><label>🎟 Pool Party — $20</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgTkt('pool',-1)">−</button><div class="qn-dark" id="tkt-pool">0</div><button class="qb-dark" onclick="chgTkt('pool',1)">+</button></div>
+      </div>
+      <div class="trow-dark"><label>🍽 Banquet — $60</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgTkt('ban',-1)">−</button><div class="qn-dark" id="tkt-ban">0</div><button class="qb-dark" onclick="chgTkt('ban',1)">+</button></div>
+      </div>
+      <div class="trow-dark"><label>🎫 All-Access — $90</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgTkt('all',-1)">−</button><div class="qn-dark" id="tkt-all">0</div><button class="qb-dark" onclick="chgTkt('all',1)">+</button></div>
+      </div>
+    </div>
+
+    <!-- Raffle -->
+    <div class="pos-section">
+      <div class="pos-section-title">Raffle — $20 each</div>
+      <div class="trow-dark"><label>🎟 50/50 — $20</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgR('ff',-1)">−</button><div class="qn-dark" id="r-ff">0</div><button class="qb-dark" onclick="chgR('ff',1)">+</button></div>
+      </div>
+      <div class="trow-dark"><label>🧊 Yeti Cooler Full of Liquor — $20</label>
+        <div class="qc-dark"><button class="qb-dark" onclick="chgR('yeti',-1)">−</button><div class="qn-dark" id="r-yeti">0</div><button class="qb-dark" onclick="chgR('yeti',1)">+</button></div>
+      </div>
+    </div>
+
+    <!-- Order summary -->
+    <div class="olines" id="olines"><div class="oempty">Nothing selected.</div></div>
+    <div class="otrow">
+      <div class="otlbl">Total</div>
+      <div class="otamt" id="otamt">$0.00</div>
+    </div>
+
+    <button class="cbtn" id="chargeBtn" onclick="openModal()" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      <span id="chargeLbl">Charge $0.00</span>
+    </button>
+    <button class="clrbtn" onclick="clearPOS()">Clear / New Transaction</button>
+
+  </div><!-- pos-body -->
+</div><!-- pos-col -->
+
+</div><!-- page-wrap -->
+
+<!-- ════════ CHARGE MODAL ════════ -->
+<div class="moverlay" id="modal">
+  <div class="modal">
+    <div class="micon" id="micon">💳</div>
+    <div class="mttl" id="mttl">Process Card</div>
+    <div class="msub" id="msub">Confirm order</div>
+    <table class="rtbl" id="mlines"></table>
+    <hr class="rdiv">
+    <table class="rtbl">
+      <tr class="rtrow"><td>TOTAL</td><td id="mtotal"></td></tr>
+      <tr><td style="font-size:11px;color:var(--mid)">Payment</td><td style="font-size:11px;color:var(--mid)" id="mpay"></td></tr>
+    </table>
+    <div class="rmeta" id="mmeta"></div>
+    <div id="cardSection" style="display:none">
+      <div class="card-el-wrap">
+        <div class="cel-lbl">Card Details</div>
+        <div id="card-element"></div>
+        <div id="card-errors"></div>
+      </div>
+    </div>
+    <div class="errbanner" id="errBanner"></div>
+    <div class="mbtns">
+      <button class="mbtn2 sec" id="backBtn" onclick="closeModal()">Back</button>
+      <button class="mbtn2 pri" id="confirmBtn" onclick="doCharge()">
+        <span id="confirmLbl">✓ Confirm &amp; Print</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
+// ── STRIPE ────────────────────────────────────────────────
+var STRIPE_PK = 'pk_live_51PLACEHOLDER_REPLACE_WITH_YOUR_KEY';
+var stripe = Stripe(STRIPE_PK);
+var elements = stripe.elements();
+var cardEl = null, cardMounted = false;
+
+// ── STATE ─────────────────────────────────────────────────
+var roster = [];          // loaded from Cognito via Netlify fn
+var checkedIn = {};       // entryId -> bool (session-only)
+var filterMode = 'all';
+var activeTab = 'roster';
+
+// POS state
+var posMode = 'idle';     // 'idle' | 'walkin' | 'checkin' | 'addon'
+var selectedEntry = null;
+var pay = 'card';
+var divs = {}, twts = {};
+var tkts = {cap:0,pool:0,ban:0,all:0};
+var raff = {ff:0,yeti:0};
+var txlog = [];
+var pending = null;
+var processing = false;
+
+var PRICES = {boat:300,div:100,twt:100,cap:20,pool:20,ban:60,all:90,rff:20,ryeti:20};
+
+// ── LOAD ROSTER ───────────────────────────────────────────
+async function loadRoster() {
+  var btn = document.getElementById('reloadBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading…';
+  document.getElementById('loadingMsg').style.display = '';
+  document.getElementById('rosterTable').style.display = 'none';
+  document.getElementById('noResults').style.display = 'none';
+
+  try {
+    var resp = await fetch('/.netlify/functions/get-registrations');
+    if (!resp.ok) {
+      var errText = await resp.text();
+      throw new Error('HTTP ' + resp.status + ': ' + errText.substring(0, 200));
+    }
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    // Handle both {entries:[]} and raw array
+    roster = Array.isArray(data) ? data : (data.entries || []);
+    if (!Array.isArray(roster)) throw new Error('Unexpected data shape from server');
+    renderRoster();
+    updateStats();
+  } catch(err) {
+    document.getElementById('loadingMsg').textContent = '⚠️ Could not load: ' + err.message;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Refresh';
+}
+
+function updateStats() {
+  var boats = roster.filter(function(e){return e.isBoat;}).length;
+  var tix   = roster.filter(function(e){return !e.isBoat;}).length;
+  var ci    = Object.values(checkedIn).filter(Boolean).length;
+  document.getElementById('statBoats').textContent = boats;
+  document.getElementById('statTickets').textContent = tix;
+  document.getElementById('statCheckin').textContent = 'Checked In: ' + ci;
+}
+
+// ── RENDER ROSTER ─────────────────────────────────────────
+function renderRoster() {
+  var q = document.getElementById('searchInput').value.trim().toLowerCase();
+  var filtered = roster.filter(function(e) {
+    if (filterMode === 'boats' && !e.isBoat) return false;
+    if (filterMode === 'tickets' && e.isBoat) return false;
+    if (filterMode === 'notchecked' && checkedIn[e.id]) return false;
+    if (q) {
+      var hay = (e.name+' '+e.teamName+' '+e.divisions).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  var tbody = document.getElementById('rosterBody');
+  var table = document.getElementById('rosterTable');
+  var noRes = document.getElementById('noResults');
+  document.getElementById('loadingMsg').style.display = 'none';
+
+  if (filtered.length === 0) {
+    table.style.display = 'none';
+    noRes.style.display = '';
+    return;
+  }
+  noRes.style.display = 'none';
+  table.style.display = '';
+
+  tbody.innerHTML = filtered.map(function(e) {
+    var isCI = !!checkedIn[e.id];
+    var divs = parseDivs(e.divisions || e.divisionsComp);
+    var divHtml = divs.map(function(d) {
+      return '<span class="div-pill div-'+d[0]+'">'+d+'</span>';
+    }).join('');
+    var typeBadge = e.isBoat
+      ? '<span class="boat-badge">🚤 Boat</span>'
+      : (e.sponsor ? '<span class="comp-badge">🎁 Comp</span>' : '<span class="ticket-badge">🎟 Tickets</span>');
+    var paid = e.amountPaid > 0 ? '$'+e.amountPaid.toFixed(0) : '<span style="color:var(--mid)">Comp</span>';
+    var boatNumHtml = e.isBoat
+      ? '<input class="boat-num-input" placeholder="—" value="'+(e.boatNumber||'')+'" onchange="setBoatNum('+e.id+',this.value)" title="Assign boat #">'
+      : '<span style="color:var(--mid)">—</span>';
+    var ciBtn = isCI
+      ? '<button class="chk-btn in" onclick="toggleCI('+e.id+')">✓ In</button>'
+      : '<button class="chk-btn out" onclick="toggleCI('+e.id+')">Check In</button>';
+    var selBtn = '<button class="sel-btn" onclick="selectEntry('+e.id+')">Select →</button>';
+
+    return '<tr class="'+(isCI?'checked-in':'')+'" id="row-'+e.id+'">'
+      + '<td style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;color:var(--mid);font-size:13px">'+e.id+'</td>'
+      + '<td><div class="pname" style="font-weight:600">'+esc(e.name)+'</div>'
+      + (e.teamName ? '<div style="font-size:11px;color:var(--mid)">'+esc(e.teamName)+'</div>' : '')
+      + '</td>'
+      + '<td>'+typeBadge+'</td>'
+      + '<td>'+(divHtml||'<span style="color:var(--mid)">—</span>')+'</td>'
+      + '<td>'+boatNumHtml+'</td>'
+      + '<td>'+paid+'</td>'
+      + '<td>'+ciBtn+'</td>'
+      + '<td>'+selBtn+'</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function parseDivs(str) {
+  if (!str) return [];
+  return str.split(',').map(function(d){return d.trim();}).filter(Boolean);
+}
+
+function setFilter(f) {
+  filterMode = f;
+  ['all','boats','tickets','notchecked'].forEach(function(k){
+    document.getElementById('filter-'+k).classList.toggle('on', k===f);
+  });
+  renderRoster();
+}
+
+function filterRoster() { renderRoster(); }
+
+function showTab(t) {
+  activeTab = t;
+  document.getElementById('tab-roster').classList.toggle('on', t==='roster');
+  document.getElementById('tab-log').classList.toggle('on', t==='log');
+  document.getElementById('tab-help').classList.toggle('on', t==='help');
+  document.getElementById('rosterTab').style.display = t==='roster' ? '' : 'none';
+  document.getElementById('logTab').style.display = t==='log' ? '' : 'none';
+  document.getElementById('helpTab').style.display = t==='help' ? '' : 'none';
+  if (t==='log') renderLog();
+}
+
+// ── CHECK IN ──────────────────────────────────────────────
+function toggleCI(id) {
+  checkedIn[id] = !checkedIn[id];
+  updateStats();
+  renderRoster();
+}
+
+function setBoatNum(id, val) {
+  var entry = roster.find(function(e){return e.id===id;});
+  if (entry) entry.boatNumber = val;
+}
+
+// ── SELECT ENTRY ──────────────────────────────────────────
+function selectEntry(id) {
+  var entry = roster.find(function(e){return e.id===id;});
+  if (!entry) return;
+  selectedEntry = entry;
+
+  // Pre-fill buyer info
+  document.getElementById('pName').value = entry.name || '';
+  document.getElementById('pMember').value = '';
+  document.getElementById('pEmail').value = '';
+
+  // Determine mode
+  if (entry.amountPaid > 0 || entry.sponsor) {
+    // Pre-registered — add-on mode (tickets, TWT, extra divisions only)
+    posMode = 'addon';
+    document.getElementById('posModeBadge').className = 'pos-mode-badge addon';
+    document.getElementById('posModeBadge').textContent = '➕ Add-On: ' + entry.name;
+    document.getElementById('posContext').textContent = entry.teamName || 'Pre-registered';
+    document.getElementById('boatFeeRow').style.display = 'none';
+    document.getElementById('divLabel').textContent = 'Add Division(s) — $100 each';
+    document.getElementById('regSection').style.display = entry.isBoat ? '' : 'none';
+    // Don't pre-check their existing divisions (they already paid for those)
+  } else {
+    // Comp / unpaid — check-in mode, can still sell tickets
+    posMode = 'checkin';
+    document.getElementById('posModeBadge').className = 'pos-mode-badge checkin';
+    document.getElementById('posModeBadge').textContent = '✓ Check-In: ' + entry.name;
+    document.getElementById('posContext').textContent = entry.teamName || '';
+    document.getElementById('regSection').style.display = 'none';
+  }
+
+  // Auto check-in
+  if (!checkedIn[id]) {
+    checkedIn[id] = true;
+    updateStats();
+    renderRoster();
+  }
+
+  clearPOSItems();
+  calcTotal();
+
+  // Scroll POS into view on mobile
+  document.getElementById('posPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── WALK-UP ───────────────────────────────────────────────
+function startWalkup() {
+  selectedEntry = null;
+  posMode = 'walkin';
+  document.getElementById('posModeBadge').className = 'pos-mode-badge walkin';
+  document.getElementById('posModeBadge').textContent = '🎣 Walk-Up Registration';
+  document.getElementById('posContext').textContent = 'New — not pre-registered';
+  document.getElementById('pName').value = '';
+  document.getElementById('pBoatName').value = '';
+  document.getElementById('boatNameRow').style.display = '';
+  document.getElementById('pMember').value = '';
+  document.getElementById('pPhone').value = '';
+  document.getElementById('pEmail').value = '';
+  document.getElementById('boatFeeRow').style.display = '';
+  document.getElementById('divLabel').textContent = 'Divisions — $100 each';
+  document.getElementById('regSection').style.display = '';
+  clearPOSItems();
+  calcTotal();
+  document.getElementById('posPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── POS CONTROLS ──────────────────────────────────────────
+function setPay(p) {
+  pay = p;
+  document.getElementById('pbtn-card').classList.toggle('on', p==='card');
+  document.getElementById('pbtn-cash').classList.toggle('on', p==='cash');
+}
+
+function togDiv(d) {
+  divs[d] = !divs[d];
+  document.getElementById('dcard-'+d).classList.toggle('on', !!divs[d]);
+  if (!divs[d]) { twts[d]=false; document.getElementById('tcard-'+d).classList.remove('on'); }
+  updTwtElig(); calcTotal();
+}
+function togTwt(d) {
+  if (!divs[d]) return;
+  twts[d] = !twts[d];
+  document.getElementById('tcard-'+d).classList.toggle('on', !!twts[d]);
+  calcTotal();
+}
+function updTwtElig() {
+  ['inshore','offshore','tarpon'].forEach(function(d){
+    var el = document.getElementById('tcard-'+d);
+    if (divs[d]) el.classList.add('elig'); else el.classList.remove('elig','on');
+  });
+}
+function chgTkt(k,d){ tkts[k]=Math.max(0,(tkts[k]||0)+d); document.getElementById('tkt-'+k).textContent=tkts[k]; calcTotal(); }
+function chgR(k,d){ raff[k]=Math.max(0,raff[k]+d); document.getElementById('r-'+k).textContent=raff[k]; calcTotal(); }
+
+function clearPOSItems() {
+  divs={}; twts={}; tkts={cap:0,pool:0,ban:0,all:0}; raff={ff:0,yeti:0};
+  ['inshore','offshore','tarpon'].forEach(function(d){
+    document.getElementById('dcard-'+d).classList.remove('on');
+    document.getElementById('tcard-'+d).classList.remove('on','elig');
+  });
+  ['cap','pool','ban','all'].forEach(function(k){document.getElementById('tkt-'+k).textContent='0';});
+  document.getElementById('r-ff').textContent='0';
+  document.getElementById('r-yeti').textContent='0';
+}
+
+function clearPOS() {
+  selectedEntry = null; posMode = 'idle';
+  document.getElementById('posModeBadge').className='pos-mode-badge walkin';
+  document.getElementById('posModeBadge').textContent='👆 Select / Walk-Up';
+  document.getElementById('posContext').textContent='Select a registrant or start a walk-up';
+  document.getElementById('pName').value='';
+  document.getElementById('pBoatName').value='';
+  document.getElementById('boatNameRow').style.display='none';
+  document.getElementById('pMember').value='';
+  document.getElementById('pPhone').value='';
+  document.getElementById('pEmail').value='';
+  document.getElementById('boatFeeRow').style.display='';
+  document.getElementById('regSection').style.display='';
+  clearPOSItems(); calcTotal();
+}
+
+// ── CALC ──────────────────────────────────────────────────
+function calcTotal() {
+  var lines=[], total=0;
+  var dn={inshore:'🐟 Inshore',offshore:'🎣 Offshore',tarpon:'🦈 Tarpon'};
+  var activeDivs=['inshore','offshore','tarpon'].filter(function(d){return divs[d];});
+
+  var showBoatFee = (posMode==='walkin') && activeDivs.length>0;
+  if (showBoatFee) { lines.push({n:'🚤 Boat Entry Fee',a:PRICES.boat}); total+=PRICES.boat; }
+  activeDivs.forEach(function(d){ lines.push({n:dn[d]+' Div',a:PRICES.div}); total+=PRICES.div; });
+  ['inshore','offshore','tarpon'].forEach(function(d){
+    if(twts[d]&&divs[d]){ lines.push({n:dn[d]+' TWT',a:PRICES.twt}); total+=PRICES.twt; }
+  });
+  [{k:'cap',l:'🎫 Captains Mtg',p:PRICES.cap},{k:'pool',l:'🎟 Pool Party',p:PRICES.pool},
+   {k:'ban',l:'🍽 Banquet',p:PRICES.ban},{k:'all',l:'🎫 All-Access',p:PRICES.all}
+  ].forEach(function(t){ if(tkts[t.k]>0){lines.push({n:t.l+' ×'+tkts[t.k],a:t.p*tkts[t.k]});total+=t.p*tkts[t.k];} });
+  if(raff.ff>0){lines.push({n:'🎟 50/50 Raffle ×'+raff.ff,a:raff.ff*PRICES.rff});total+=raff.ff*PRICES.rff;}
+  if(raff.yeti>0){lines.push({n:'🧊 Yeti Cooler Raffle ×'+raff.yeti,a:raff.yeti*PRICES.ryeti});total+=raff.yeti*PRICES.ryeti;}
+
+  var ol=document.getElementById('olines');
+  ol.innerHTML = lines.length===0?'<div class="oempty">Nothing selected.</div>'
+    :lines.map(function(l){return '<div class="oline"><div class="oln">'+esc(l.n)+'</div><div class="ola">$'+l.a.toFixed(2)+'</div></div>';}).join('');
+  document.getElementById('otamt').textContent='$'+total.toFixed(2);
+  var hasName=document.getElementById('pName').value.trim();
+  var btn=document.getElementById('chargeBtn');
+  btn.disabled=(total<=0||!hasName||posMode==='idle');
+  document.getElementById('chargeLbl').textContent='Charge $'+total.toFixed(2);
+  return {lines:lines,total:total};
+}
+
+// ── META for QBO ──────────────────────────────────────────
+function buildMeta(data) {
+  var name=document.getElementById('pName').value.trim();
+  var mem=document.getElementById('pMember').value.trim()||'999999';
+  var parts=[];
+  if(posMode==='walkin') parts.push('WalkUp Boat Reg');
+  else if(posMode==='addon') parts.push('AddOn');
+  else if(posMode==='checkin') parts.push('CheckIn');
+  var dn={inshore:'Inshore',offshore:'Offshore',tarpon:'Tarpon'};
+  ['inshore','offshore','tarpon'].forEach(function(d){
+    if(divs[d])parts.push(dn[d]+' Div');
+    if(twts[d]&&divs[d])parts.push(dn[d]+' TWT');
+  });
+  if(tkts.cap>0)parts.push(tkts.cap+'×CapMtg');
+  if(tkts.pool>0)parts.push(tkts.pool+'×Pool');
+  if(tkts.ban>0)parts.push(tkts.ban+'×Banquet');
+  if(tkts.all>0)parts.push(tkts.all+'×AllAccess');
+  if(raff.ff>0)parts.push(raff.ff+'×50/50');
+  if(raff.yeti>0)parts.push(raff.yeti+'×YetiRaffle');
+  if(selectedEntry)parts.push('CognitoEntry:'+selectedEntry.id);
+  return {
+    customer:name, memberNo:mem,
+    qboAcct:'4301 Fundraising Registration Revenue',
+    qboClass:'Fundraising:Fishing Tournament',
+    memo:'31st Annual Fishing Tournament — '+parts.join(' | ')+' — RegTable',
+    txMode:posMode==='walkin'?'Walk-Up Reg':posMode==='addon'?'Add-On':'Check-In Sale',
+    contact:document.getElementById('pEmail').value.trim()
+  };
+}
+
+// ── MODAL ─────────────────────────────────────────────────
+function openModal() {
+  var data=calcTotal();
+  var meta=buildMeta(data);
+  var name=document.getElementById('pName').value.trim();
+  pending={lines:data.lines,total:data.total,name:name,
+    member:document.getElementById('pMember').value.trim()||'999999',
+    contact:meta.contact,pay:pay,mode:posMode,meta:meta,
+    entryId:selectedEntry?selectedEntry.id:null};
+
+  document.getElementById('micon').textContent=pay==='cash'?'💵':'💳';
+  document.getElementById('mttl').textContent=pay==='cash'?'Collect Cash':'Process Card';
+  document.getElementById('msub').textContent='Confirm for '+name;
+  var tb=''; data.lines.forEach(function(l){tb+='<tr><td>'+esc(l.n)+'</td><td>$'+l.a.toFixed(2)+'</td></tr>';});
+  document.getElementById('mlines').innerHTML=tb;
+  document.getElementById('mtotal').textContent='$'+data.total.toFixed(2);
+  document.getElementById('mpay').textContent=pay==='cash'?'Cash':'Credit Card (Stripe)';
+  document.getElementById('mmeta').textContent=name+(pending.member!=='999999'?' · #'+pending.member:'')+(meta.contact?' · '+meta.contact:'')+'\n'+new Date().toLocaleString();
+
+  var cs=document.getElementById('cardSection');
+  if(pay==='card'){
+    cs.style.display='';
+    if(!cardMounted){
+      cardEl=elements.create('card',{style:{base:{fontFamily:"'Barlow',sans-serif",fontSize:'15px',color:'#1a1a2e','::placeholder':{color:'#9aafcc'}},invalid:{color:'#b92b2b'}}});
+      cardEl.mount('#card-element');
+      cardEl.on('change',function(e){document.getElementById('card-errors').textContent=e.error?e.error.message:'';});
+      cardMounted=true;
+    }
+    document.getElementById('confirmLbl').textContent='💳 Charge $'+data.total.toFixed(2);
+  } else {
+    cs.style.display='none';
+    document.getElementById('confirmLbl').innerHTML='✓ Confirm &amp; Print';
+  }
+  document.getElementById('errBanner').style.display='none';
+  document.getElementById('backBtn').disabled=false;
+  document.getElementById('confirmBtn').disabled=false;
+  processing=false;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){ if(processing)return; document.getElementById('modal').classList.remove('open'); pending=null; }
+
+async function doCharge(){
+  if(processing||!pending)return;
+  if(pending.pay==='cash'){ finalize(pending,null); return; }
+  processing=true; setProc(true);
+  document.getElementById('errBanner').style.display='none';
+  try {
+    var pmr=await stripe.createPaymentMethod({type:'card',card:cardEl,billing_details:{name:pending.name,email:pending.contact||undefined}});
+    if(pmr.error){showErr(pmr.error.message);return;}
+    var resp=await fetch('/.netlify/functions/create-charge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      amount:pending.total,paymentMethod:pmr.paymentMethod.id,
+      customer:pending.meta.customer,memberNo:pending.meta.memberNo,
+      contact:pending.meta.contact||'',qboAcct:pending.meta.qboAcct,
+      qboClass:pending.meta.qboClass,memo:pending.meta.memo,
+      txMode:pending.meta.txMode,lineItems:pending.lines
+    })});
+    var result=await resp.json();
+    if(result.requiresAction){
+      var ar=await stripe.handleCardAction(result.clientSecret);
+      if(ar.error){showErr(ar.error.message);return;}
+      var resp2=await fetch('/.netlify/functions/create-charge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        amount:pending.total,paymentMethod:ar.paymentIntent.payment_method,
+        customer:pending.meta.customer,memberNo:pending.meta.memberNo,
+        contact:pending.meta.contact||'',qboAcct:pending.meta.qboAcct,
+        qboClass:pending.meta.qboClass,memo:pending.meta.memo,
+        txMode:pending.meta.txMode,lineItems:pending.lines
+      })});
+      result=await resp2.json();
+    }
+    if(!result.success){showErr(result.error||'Payment failed.');return;}
+    pending.stripeId=result.paymentIntentId; pending.last4=result.last4; pending.brand=result.brand;
+    finalize(pending,result);
+  } catch(err){ showErr('Network error — check connection.'); console.error(err); }
+}
+
 // ── SAVE BOAT TO SUPABASE (walk-up only) ─────────────────────────────────────
 async function saveBoatToSupabase(data) {
   try {
-    const payload = {
+    var payload = {
       captainName:     data.name,
-      captainEmail:    data.contact || '',
-      captainPhone:    document.getElementById('pPhone') ? document.getElementById('pPhone').value.trim() : '',
+      captainEmail:    document.getElementById('pEmail').value.trim(),
+      captainPhone:    document.getElementById('pPhone').value.trim(),
       memberNumber:    data.member !== '999999' ? data.member : '999999',
-      boatName:        document.getElementById('pBoatName') ? document.getElementById('pBoatName').value.trim() : '',
+      boatName:        document.getElementById('pBoatName').value.trim(),
       divInshore:      !!divs.inshore,
       divOffshore:     !!divs.offshore,
       divTarpon:       !!divs.tarpon,
@@ -56,75 +947,101 @@ async function saveBoatToSupabase(data) {
       twtOffshore:     !!twts.offshore,
       twtTarpon:       !!twts.tarpon,
       amountPaid:      data.total,
-      paymentMethod:   data.pay,         // 'card' | 'cash'
+      paymentMethod:   data.pay,
       stripePaymentId: data.stripeId || null,
       extrasJson: {
-        cap:      tkts.cap   || 0,
-        pool:     tkts.pool  || 0,
-        ban:      tkts.ban   || 0,
-        all:      tkts.all   || 0,
-        raff_ff:  raff.ff    || 0,
-        raff_yeti:raff.yeti  || 0,
+        cap:       tkts.cap   || 0,
+        pool:      tkts.pool  || 0,
+        ban:       tkts.ban   || 0,
+        all:       tkts.all   || 0,
+        raff_ff:   raff.ff    || 0,
+        raff_yeti: raff.yeti  || 0,
       },
     };
-
-    const resp = await fetch('/.netlify/functions/save-boat', {
-      method:  'POST',
+    var resp = await fetch('/.netlify/functions/save-boat', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      body: JSON.stringify(payload),
     });
-    const result = await resp.json();
+    var result = await resp.json();
     if (!result.success) {
       console.warn('save-boat warning (non-fatal):', result.error);
     } else {
       console.log('Boat saved to Supabase:', result.id);
     }
-  } catch (err) {
+  } catch(err) {
     // Non-fatal — POS still works even if Supabase is unreachable
     console.warn('save-boat network error (non-fatal):', err.message);
   }
 }
 
-// ── FINALIZE (replace existing) ──────────────────────────────────────────────
-function finalize(data, stripe) {
-  txlog.push(data);
-  renderLog();
-
-  // Print receipt
-  var pw = window.open('', '_blank', 'width=400,height=680');
-  pw.document.write(buildReceipt(data, stripe));
+function finalize(data,stripe){
+  txlog.push(data); renderLog();
+  var pw=window.open('','_blank','width=400,height=680');
+  pw.document.write(buildReceipt(data,stripe));
   pw.document.close();
-  setTimeout(function () { pw.print(); }, 400);
-
+  setTimeout(function(){pw.print();},400);
   // Save walk-up boats to Supabase (fire-and-forget, non-blocking)
-  if (data.mode === 'walkin') {
-    saveBoatToSupabase(data);
-  }
-
-  closeModal();
-  clearPOS();
+  if(data.mode==='walkin'){ saveBoatToSupabase(data); }
+  closeModal(); clearPOS();
 }
+
+function showErr(msg){
+  processing=false; setProc(false);
+  var b=document.getElementById('errBanner'); b.textContent='⚠️ '+msg; b.style.display='block';
+}
+function setProc(on){
+  var lbl=document.getElementById('confirmLbl');
+  var btn=document.getElementById('confirmBtn');
+  var back=document.getElementById('backBtn');
+  if(on){lbl.innerHTML='<span class="spin"></span> Processing…';btn.disabled=true;back.disabled=true;}
+  else{lbl.innerHTML=pending&&pending.pay==='card'?'💳 Charge $'+(pending.total||0).toFixed(2):'✓ Confirm &amp; Print';btn.disabled=false;back.disabled=false;}
+}
+
+// ── RECEIPT ───────────────────────────────────────────────
+function buildReceipt(d,s){
+  var rows=d.lines.map(function(l){return '<tr><td style="padding:5px 0">'+esc(l.n)+'</td><td style="text-align:right;padding:5px 0;font-weight:600">$'+l.a.toFixed(2)+'</td></tr>';}).join('');
+  var cardLine='';
+  if(s&&s.brand&&s.last4) cardLine='<p>'+cap(s.brand)+' ending '+s.last4+'</p>';
+  if(d.stripeId) cardLine+='<p style="font-size:10px;color:#aaa">'+esc(d.stripeId)+'</p>';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt</title>'
+    +'<style>body{font-family:Arial,sans-serif;font-size:13px;max-width:320px;margin:0 auto;padding:16px}'
+    +'h2{font-size:15px;margin-bottom:2px}p{margin:2px 0;color:#555;font-size:12px}'
+    +'table{width:100%;border-collapse:collapse;margin:10px 0}hr{border:none;border-top:1px solid #ddd}'
+    +'tfoot td{font-weight:700;font-size:14px;padding-top:6px}'
+    +'.footer{font-size:11px;color:#888;text-align:center;margin-top:12px}'
+    +'.badge{background:#eee;border-radius:4px;padding:2px 8px;font-size:11px}'
+    +'</style></head><body>'
+    +'<h2>⚓ Rough Riders Fishing Tournament</h2><p>31st Annual · Treasure Island, FL · June 19–20, 2026</p><hr>'
+    +'<p><span class="badge">'+esc(d.meta?d.meta.txMode:d.mode)+'</span></p>'
+    +'<p><strong>'+esc(d.name)+'</strong>'+(d.member&&d.member!=='999999'?' · Member #'+esc(d.member):'')+'</p>'
+    +'<p>Payment: '+(d.pay==='cash'?'Cash':'Credit Card')+'</p>'+cardLine
+    +'<p>'+new Date().toLocaleString()+'</p>'
+    +'<table><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td>TOTAL</td><td style="text-align:right">$'+d.total.toFixed(2)+'</td></tr></tfoot></table>'
+    +'<div class="footer">Thank you for supporting the Rough Riders!<br>roughridersfishing.org</div></body></html>';
+}
+
+// ── LOG ───────────────────────────────────────────────────
+function renderLog() {
+  var el = document.getElementById('logContent');
+  if (!txlog.length) { el.innerHTML='<div style="color:var(--mid);padding:20px;font-size:13px">No transactions yet this session.</div>'; return; }
+  el.innerHTML = '<table class="roster-table"><thead><tr><th>#</th><th>Name</th><th>Mode</th><th>Payment</th><th>Total</th><th>Stripe ID</th></tr></thead><tbody>'
+    +txlog.slice().reverse().map(function(t,i){
+      return '<tr><td>'+(txlog.length-i)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.mode)+'</td>'
+        +'<td>'+(t.pay==='cash'?'💵 Cash':'💳 Card')+'</td>'
+        +'<td style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;color:var(--green)">$'+t.total.toFixed(2)+'</td>'
+        +'<td style="font-size:11px;color:var(--mid)">'+(t.stripeId||'—')+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+// ── UTIL ──────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function cap(s){return String(s||'').charAt(0).toUpperCase()+String(s||'').slice(1);}
+
+// ── INIT ──────────────────────────────────────────────────
+loadRoster();
+calcTotal();
 </script>
-
-<!--
-  ============================================================
-  C) ENV VARS — add to Netlify site settings for fishing-volunteer-POS
-  ============================================================
-  SUPABASE_URL         = https://qyoqyeaqacdjstvkonwx.supabase.co
-  SUPABASE_SERVICE_KEY = <your service_role secret key>
-                         (Dashboard → Project Settings → API → service_role)
-
-  ============================================================
-  D) ALSO ADD pPhone field if not already present
-  ============================================================
-  The Supabase boats table stores captain_phone.
-  If the POS doesn't already have a phone input, add:
-
-    <div class="pf">
-      <label for="pPhone">Phone</label>
-      <input id="pPhone" type="tel" placeholder="(813) 555-0100" autocomplete="off">
-    </div>
-
-  And clear it in clearPOS():
-    document.getElementById('pPhone').value = '';
--->
+</body>
+</html>
