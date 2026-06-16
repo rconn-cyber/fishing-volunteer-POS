@@ -678,7 +678,7 @@ function updateStats() {
   var boats = roster.filter(function(e){return e.isBoat;}).length;
   var tix   = roster.filter(function(e){return !e.isBoat;}).length;
   var ci    = Object.values(checkedIn).filter(Boolean).length;
-  document.getElementById('statBoats').textContent = boats;
+  document.getElementById('statBoats').textContent = boats + ' Boats';
   document.getElementById('statTickets').textContent = tix;
   document.getElementById('ciCount').textContent = ci;
   // Update mobile log badge
@@ -963,7 +963,9 @@ function togDiv(d) {
   updTwtElig(); calcTotal(); updateMobPosBadge();
 }
 function togTwt(d) {
-  if (!divs[d]) return;
+  var dc = document.getElementById('dcard-'+d);
+  var hasPaidDiv = dc && dc.classList.contains('paid');
+  if (!divs[d] && !hasPaidDiv) return; // not eligible
   twts[d] = !twts[d];
   document.getElementById('tcard-'+d).classList.toggle('on', !!twts[d]);
   calcTotal(); updateMobPosBadge();
@@ -1046,20 +1048,58 @@ function removeMiscRow(id) {
 
 function renderMiscRows() {
   var wrap = document.getElementById('miscRows');
-  if (!miscItems.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = miscItems.map(function(m) {
-    return '<div class="misc-row" id="misc-row-'+m.id+'">'
-      +'<div class="misc-fields">'
-      +'<input class="misc-name" id="misc-name-'+m.id+'" placeholder="Item name *" value="'+esc(m.name)+'" oninput="updMisc('+m.id+',\"name\",this.value)">'
-      +'<input placeholder="Description (optional)" value="'+esc(m.desc)+'" oninput="updMisc('+m.id+',\"desc\",this.value)">'
-      +'<div class="misc-qty-price">'
-      +'<input type="number" min="1" step="1" placeholder="Qty" value="'+m.qty+'" oninput="updMisc('+m.id+',\"qty\",this.value)" style="width:64px;text-align:center">'
-      +'<input class="misc-price" type="number" min="0" step="0.01" placeholder="Price $" value="'+(m.price||'')+'" oninput="updMisc('+m.id+',\"price\",this.value)">'
-      +'</div>'
-      +'</div>'
-      +'<button class="misc-del" onclick="removeMiscRow('+m.id+')" title="Remove">×</button>'
-      +'</div>';
-  }).join('');
+  wrap.innerHTML = '';
+  miscItems.forEach(function(m) {
+    var row = document.createElement('div');
+    row.className = 'misc-row';
+    row.id = 'misc-row-'+m.id;
+
+    var fields = document.createElement('div');
+    fields.className = 'misc-fields';
+
+    var inName = document.createElement('input');
+    inName.className = 'misc-name';
+    inName.placeholder = 'Item name *';
+    inName.value = m.name;
+    inName.addEventListener('input', function(){ updMisc(m.id,'name',this.value); });
+
+    var inDesc = document.createElement('input');
+    inDesc.placeholder = 'Description (optional)';
+    inDesc.value = m.desc;
+    inDesc.addEventListener('input', function(){ updMisc(m.id,'desc',this.value); });
+
+    var qpRow = document.createElement('div');
+    qpRow.className = 'misc-qty-price';
+
+    var inQty = document.createElement('input');
+    inQty.type = 'number'; inQty.min = '1'; inQty.step = '1';
+    inQty.placeholder = 'Qty'; inQty.value = m.qty;
+    inQty.style.cssText = 'width:64px;text-align:center';
+    inQty.addEventListener('input', function(){ updMisc(m.id,'qty',this.value); });
+
+    var inPrice = document.createElement('input');
+    inPrice.type = 'number'; inPrice.min = '0'; inPrice.step = '0.01';
+    inPrice.placeholder = 'Price $';
+    inPrice.className = 'misc-price';
+    if (m.price) inPrice.value = m.price;
+    inPrice.addEventListener('input', function(){ updMisc(m.id,'price',this.value); });
+
+    qpRow.appendChild(inQty);
+    qpRow.appendChild(inPrice);
+    fields.appendChild(inName);
+    fields.appendChild(inDesc);
+    fields.appendChild(qpRow);
+
+    var del = document.createElement('button');
+    del.className = 'misc-del';
+    del.title = 'Remove';
+    del.textContent = '×';
+    del.addEventListener('click', function(){ removeMiscRow(m.id); });
+
+    row.appendChild(fields);
+    row.appendChild(del);
+    wrap.appendChild(row);
+  });
 }
 
 function updMisc(id, field, val) {
