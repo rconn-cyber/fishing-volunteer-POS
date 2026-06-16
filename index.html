@@ -204,7 +204,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .micon{text-align:center;font-size:36px;margin-bottom:8px}
 .mttl{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;text-align:center;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
 .msub{text-align:center;font-size:13px;color:var(--mid);margin-bottom:14px}
-.card-el-wrap{border:1.5px solid var(--border);border-radius:8px;padding:14px;background:#fff;margin-bottom:12px}
+.card-el-wrap{border:1.5px solid var(--border);border-radius:8px;padding:16px;background:#fff;margin-bottom:12px;cursor:pointer;min-height:56px}
 .card-el-wrap:focus-within{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.1)}
 .cel-lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
 #card-errors{color:var(--red);font-size:12px;margin-top:5px;min-height:16px}
@@ -595,8 +595,8 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
     </table>
     <div class="rmeta" id="mmeta"></div>
     <div id="cardSection" style="display:none">
-      <div class="card-el-wrap">
-        <div class="cel-lbl">Card Details</div>
+      <div class="card-el-wrap" id="cardElWrap" onclick="focusCardEl()">
+        <div class="cel-lbl">Card Details <span id="cardTapHint" style="font-size:11px;color:var(--water);font-weight:600;letter-spacing:0;text-transform:none">— tap to enter</span></div>
         <div id="card-element"></div>
         <div id="card-errors"></div>
       </div>
@@ -1234,9 +1234,13 @@ function openModal() {
       cardEl=elements.create('card',{style:{base:{fontFamily:"'Barlow',sans-serif",fontSize:'16px',color:'#1a1a2e','::placeholder':{color:'#9aafcc'}},invalid:{color:'#b92b2b'}}});
       cardEl.mount('#card-element');
       cardEl.on('change',function(e){document.getElementById('card-errors').textContent=e.error?e.error.message:'';});
+      cardEl.on('focus',function(){ document.getElementById('cardTapHint').style.display='none'; });
+      cardEl.on('blur',function(){ document.getElementById('cardTapHint').style.display=''; });
       cardMounted=true;
     }
     document.getElementById('confirmLbl').textContent='💳 Charge $'+data.total.toFixed(2);
+    // Auto-focus card field on mobile after modal animates in
+    setTimeout(function(){ if(cardEl) cardEl.focus(); }, 350);
   } else {
     cs.style.display='none';
     document.getElementById('confirmLbl').innerHTML='✓ Confirm &amp; Print';
@@ -1248,6 +1252,7 @@ function openModal() {
   document.getElementById('modal').classList.add('open');
 }
 
+function focusCardEl(){ if(cardEl) cardEl.focus(); }
 function closeModal(){ if(processing)return; document.getElementById('modal').classList.remove('open'); pending=null; }
 
 async function doCharge(){
