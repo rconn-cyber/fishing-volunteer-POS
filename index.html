@@ -853,6 +853,34 @@ function doSelectEntry(id) {
         tc.querySelector('.tn').textContent = capD + ' ✓';
       }
     });
+
+    // Show info note for pre-paid tickets
+    var tix = entry.tickets || {};
+    var tixParts = [];
+    // Boat entries always include 1 Captain's Meeting ticket
+    if (entry.isBoat) tixParts.push('1 Captains Mtg included');
+    if (tix.cap  > 0) tixParts.push(tix.cap  + ' extra Captains Mtg');
+    if (tix.pool > 0) tixParts.push(tix.pool + ' Pool Party');
+    if (tix.ban  > 0) tixParts.push(tix.ban  + ' Banquet');
+    if (tix.all  > 0) tixParts.push(tix.all  + ' All-Access');
+    var noteEl = document.getElementById('paidTicketsNote');
+    if (!noteEl) {
+      noteEl = document.createElement('div');
+      noteEl.id = 'paidTicketsNote';
+      noteEl.style.cssText = 'background:#f0fff4;border:1px solid #86efac;border-radius:7px;padding:9px 13px;margin-bottom:12px;font-size:14px;color:var(--green);line-height:1.5;display:none';
+      var tktSection = document.querySelector('.pos-section-title');
+      // Insert before Weekend Tickets section title
+      var allTitles = document.querySelectorAll('.pos-section-title');
+      var tktTitle = null;
+      allTitles.forEach(function(t){ if (t.textContent.includes('Weekend')) tktTitle = t; });
+      if (tktTitle) tktTitle.parentNode.insertBefore(noteEl, tktTitle);
+    }
+    if (tixParts.length > 0) {
+      noteEl.innerHTML = '🎫 <strong>Already paid:</strong> ' + tixParts.join(' · ');
+      noteEl.style.display = '';
+    } else {
+      noteEl.style.display = 'none';
+    }
   } else {
     posMode = 'checkin';
     document.getElementById('posModeBadge').className = 'pos-mode-badge checkin';
@@ -941,6 +969,8 @@ function clearPOSItems() {
 
 function clearPOS() {
   selectedEntry = null; posMode = 'idle';
+  var noteEl = document.getElementById('paidTicketsNote');
+  if (noteEl) noteEl.style.display = 'none';
   document.getElementById('posModeBadge').className='pos-mode-badge walkin';
   document.getElementById('posModeBadge').textContent='👆 Select / Walk-Up';
   document.getElementById('posContext').textContent='Select a registrant or start a walk-up';
