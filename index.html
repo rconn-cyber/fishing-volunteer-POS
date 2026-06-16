@@ -135,6 +135,12 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .dcard{border:1.5px solid var(--border);border-radius:9px;padding:14px 8px;cursor:pointer;background:#fff;transition:all .13s;text-align:center;user-select:none;position:relative;-webkit-tap-highlight-color:transparent}
 .dcard:active{transform:scale(.97)}
 .dcard.on{border-color:var(--navy);background:#eef2ff}
+/* Already-paid locked state */
+.dcard.paid{border-color:var(--green);background:#f0fff4;cursor:default;pointer-events:none}
+.dcard.paid .chk{background:var(--green);border-color:var(--green)}
+.dcard.paid .chk::after{content:'✓'}
+.dcard.paid .dn{color:var(--green)}
+.dcard.paid .dp{color:var(--green);font-weight:700}
 .dcard .di{font-size:26px;margin-bottom:4px}
 .dcard .dn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--navy)}
 .dcard .dp{font-size:11px;color:var(--golddim);margin-top:2px}
@@ -150,6 +156,9 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .tcard.elig{opacity:1;pointer-events:auto}
 .tcard.elig:active{transform:scale(.97)}
 .tcard.on{border-color:var(--gold);background:#fffbec;opacity:1;pointer-events:auto}
+/* Already-paid TWT locked state */
+.tcard.paid{border-color:var(--green);background:#f0fff4;opacity:1;pointer-events:none}
+.tcard.paid .tn{color:var(--green)}
 .tcard .ti{font-size:18px}
 .tcard .tn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--navy);margin-top:2px}
 
@@ -804,8 +813,41 @@ function doSelectEntry(id) {
     document.getElementById('posModeBadge').textContent = '➕ Add-On: ' + entry.name;
     document.getElementById('posContext').textContent = entry.teamName || 'Pre-registered';
     document.getElementById('boatFeeRow').style.display = 'none';
-    document.getElementById('divLabel').textContent = 'Add Division(s) — $100 each';
+    document.getElementById('divLabel').textContent = 'Divisions';
     document.getElementById('regSection').style.display = entry.isBoat ? '' : 'none';
+
+    // Lock divisions already paid for
+    var paidDivs = parseDivs(entry.divisions || entry.divisionsComp);
+    var paidDivsLower = paidDivs.map(function(d){ return d.toLowerCase(); });
+    // TWT field is 'twt' (comma-separated string, e.g. "Inshore,Offshore")
+    var paidTwt = parseDivs(entry.twt || '');
+    var paidTwtLower = paidTwt.map(function(d){ return d.toLowerCase(); });
+
+    ['inshore','offshore','tarpon'].forEach(function(d) {
+      var dc = document.getElementById('dcard-'+d);
+      var tc = document.getElementById('tcard-'+d);
+      var alreadyHasDiv = paidDivsLower.indexOf(d) !== -1;
+      var alreadyHasTwt = paidTwtLower.indexOf(d) !== -1;
+      var capD = d.charAt(0).toUpperCase()+d.slice(1);
+
+      // Reset to clean state first
+      dc.classList.remove('on','paid');
+      tc.classList.remove('on','paid','elig');
+      dc.querySelector('.dp').textContent = '$100';
+      tc.querySelector('.tn').textContent = capD;
+
+      if (alreadyHasDiv) {
+        dc.classList.add('paid');
+        dc.querySelector('.dp').textContent = 'Paid ✓';
+        // TWT is selectable for paid divisions (if not already paid)
+        if (!alreadyHasTwt) tc.classList.add('elig');
+      }
+      if (alreadyHasTwt) {
+        tc.classList.remove('elig');
+        tc.classList.add('paid');
+        tc.querySelector('.tn').textContent = capD + ' ✓';
+      }
+    });
   } else {
     posMode = 'checkin';
     document.getElementById('posModeBadge').className = 'pos-mode-badge checkin';
@@ -880,8 +922,13 @@ function chgR(k,d){ raff[k]=Math.max(0,raff[k]+d); document.getElementById('r-'+
 function clearPOSItems() {
   divs={}; twts={}; tkts={cap:0,pool:0,ban:0,all:0}; raff={ff:0,yeti:0};
   ['inshore','offshore','tarpon'].forEach(function(d){
-    document.getElementById('dcard-'+d).classList.remove('on');
-    document.getElementById('tcard-'+d).classList.remove('on','elig');
+    var dc = document.getElementById('dcard-'+d);
+    var tc = document.getElementById('tcard-'+d);
+    var capD = d.charAt(0).toUpperCase()+d.slice(1);
+    dc.classList.remove('on','paid');
+    tc.classList.remove('on','elig','paid');
+    dc.querySelector('.dp').textContent = '$100';
+    tc.querySelector('.tn').textContent = capD;
   });
   ['cap','pool','ban','all'].forEach(function(k){document.getElementById('tkt-'+k).textContent='0';});
   document.getElementById('r-ff').textContent='0';
