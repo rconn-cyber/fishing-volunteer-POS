@@ -809,6 +809,9 @@ function doSelectEntry(id) {
   document.getElementById('pMember').value = '';
   document.getElementById('pEmail').value = '';
 
+  // Clear first so paid-locking below is the final state
+  clearPOSItems();
+
   if (entry.amountPaid > 0 || entry.sponsor) {
     posMode = 'addon';
     document.getElementById('posModeBadge').className = 'pos-mode-badge addon';
@@ -859,7 +862,6 @@ function doSelectEntry(id) {
   }
 
   if (!checkedIn[id]) { checkedIn[id] = true; updateStats(); renderRoster(); }
-  clearPOSItems();
   calcTotal();
   // Update mobile POS badge
   updateMobPosBadge();
