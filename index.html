@@ -219,6 +219,21 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .walkup-link{text-align:center;padding:8px;font-size:13px;color:var(--mid)}
 .walkup-link a{color:var(--water);font-weight:600;cursor:pointer;text-decoration:none}
 
+
+/* ── MISC ITEMS ── */
+.misc-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;background:#f7f9ff;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px}
+.misc-row input{border:1.5px solid var(--border);border-radius:6px;font-family:'Barlow',sans-serif;font-size:15px;padding:9px 10px;color:var(--dark);background:#fff;outline:none;transition:border-color .15s;width:100%}
+.misc-row input:focus{border-color:var(--water)}
+.misc-fields{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.misc-fields .misc-name{grid-column:1/-1}
+.misc-qty-price{display:flex;gap:6px;align-items:center}
+.misc-qty-price input{width:60px;text-align:center;flex-shrink:0}
+.misc-qty-price .misc-price{flex:1}
+.misc-del{width:34px;height:34px;border:none;background:none;color:#c0c8d8;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center;padding:0;-webkit-tap-highlight-color:transparent}
+.misc-del:hover{background:#fee2e2;color:var(--red)}
+.add-misc-btn{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .14s;-webkit-tap-highlight-color:transparent}
+.add-misc-btn:hover{border-color:var(--water);color:var(--water);background:#f0f6ff}
+
 /* ── HELP ── */
 .help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:4px 0 16px}
 .help-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
@@ -491,6 +506,14 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
       <div class="trow-dark"><label>🧊 Yeti Cooler — $20</label>
         <div class="qc-dark"><button class="qb-dark" onclick="chgR('yeti',-1)">−</button><div class="qn-dark" id="r-yeti">0</div><button class="qb-dark" onclick="chgR('yeti',1)">+</button></div>
       </div>
+    </div>
+
+
+    <!-- Miscellaneous -->
+    <div class="pos-section">
+      <div class="pos-section-title">Miscellaneous</div>
+      <div id="miscRows"></div>
+      <button class="add-misc-btn" onclick="addMiscRow()">＋ Add Item</button>
     </div>
 
     <!-- Order summary -->
@@ -854,6 +877,9 @@ function doSelectEntry(id) {
       }
     });
 
+    // Re-evaluate TWT eligibility now that paid divs are marked
+    updTwtElig();
+
     // Show info note for pre-paid tickets
     var tix = entry.tickets || {};
     var tixParts = [];
@@ -945,7 +971,16 @@ function togTwt(d) {
 function updTwtElig() {
   ['inshore','offshore','tarpon'].forEach(function(d){
     var el = document.getElementById('tcard-'+d);
-    if (divs[d]) el.classList.add('elig'); else el.classList.remove('elig','on');
+    var dc = document.getElementById('dcard-'+d);
+    // Eligible if newly selected OR already paid (paid div card has .paid class)
+    var hasPaidDiv = dc && dc.classList.contains('paid');
+    var hasNewDiv  = !!divs[d];
+    if (hasNewDiv || hasPaidDiv) {
+      if (!el.classList.contains('paid')) el.classList.add('elig');
+    } else {
+      el.classList.remove('elig','on');
+      twts[d] = false;
+    }
   });
 }
 function chgTkt(k,d){ tkts[k]=Math.max(0,(tkts[k]||0)+d); document.getElementById('tkt-'+k).textContent=tkts[k]; calcTotal(); updateMobPosBadge(); }
@@ -965,6 +1000,7 @@ function clearPOSItems() {
   ['cap','pool','ban','all'].forEach(function(k){document.getElementById('tkt-'+k).textContent='0';});
   document.getElementById('r-ff').textContent='0';
   document.getElementById('r-yeti').textContent='0';
+  miscItems=[]; miscIdSeq=0; renderMiscRows();
 }
 
 function clearPOS() {
@@ -986,6 +1022,65 @@ function clearPOS() {
   if (isMobile()) mobNav('roster');
 }
 
+
+// ── MISC ITEMS ────────────────────────────────────────────
+var miscItems = []; // [{id, name, desc, price, qty}]
+var miscIdSeq = 0;
+
+function addMiscRow() {
+  var id = ++miscIdSeq;
+  miscItems.push({id:id, name:'', desc:'', price:0, qty:1});
+  renderMiscRows();
+  // Focus the name field of new row
+  setTimeout(function(){
+    var el = document.getElementById('misc-name-'+id);
+    if (el) el.focus();
+  }, 50);
+}
+
+function removeMiscRow(id) {
+  miscItems = miscItems.filter(function(m){ return m.id !== id; });
+  renderMiscRows();
+  calcTotal(); updateMobPosBadge();
+}
+
+function renderMiscRows() {
+  var wrap = document.getElementById('miscRows');
+  if (!miscItems.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = miscItems.map(function(m) {
+    return '<div class="misc-row" id="misc-row-'+m.id+'">'
+      +'<div class="misc-fields">'
+      +'<input class="misc-name" id="misc-name-'+m.id+'" placeholder="Item name *" value="'+esc(m.name)+'" oninput="updMisc('+m.id+','name',this.value)">'
+      +'<input placeholder="Description (optional)" value="'+esc(m.desc)+'" oninput="updMisc('+m.id+','desc',this.value)">'
+      +'<div class="misc-qty-price">'
+      +'<input type="number" min="1" step="1" placeholder="Qty" value="'+m.qty+'" oninput="updMisc('+m.id+','qty',this.value)" style="width:64px;text-align:center">'
+      +'<input class="misc-price" type="number" min="0" step="0.01" placeholder="Price $" value="'+(m.price||'')+'" oninput="updMisc('+m.id+','price',this.value)">'
+      +'</div>'
+      +'</div>'
+      +'<button class="misc-del" onclick="removeMiscRow('+m.id+')" title="Remove">×</button>'
+      +'</div>';
+  }).join('');
+}
+
+function updMisc(id, field, val) {
+  var m = miscItems.find(function(x){ return x.id===id; });
+  if (!m) return;
+  if (field === 'price') m.price = parseFloat(val) || 0;
+  else if (field === 'qty') m.qty = Math.max(1, parseInt(val) || 1);
+  else m[field] = val;
+  calcTotal(); updateMobPosBadge();
+}
+
+function getMiscLines() {
+  var lines = [];
+  miscItems.forEach(function(m) {
+    if (!m.name.trim()) return; // skip unnamed
+    var label = m.name.trim() + (m.desc.trim() ? ' — ' + m.desc.trim() : '');
+    lines.push({n: label, a: (m.price * m.qty), qty: m.qty, price: m.price});
+  });
+  return lines;
+}
+
 // ── CALC ──────────────────────────────────────────────────
 function calcTotal() {
   var lines=[], total=0;
@@ -1003,6 +1098,12 @@ function calcTotal() {
   ].forEach(function(t){ if(tkts[t.k]>0){lines.push({n:t.l+' ×'+tkts[t.k],a:t.p*tkts[t.k]});total+=t.p*tkts[t.k];} });
   if(raff.ff>0){lines.push({n:'🎟 50/50 ×'+raff.ff,a:raff.ff*PRICES.rff});total+=raff.ff*PRICES.rff;}
   if(raff.yeti>0){lines.push({n:'🧊 Yeti ×'+raff.yeti,a:raff.yeti*PRICES.ryeti});total+=raff.yeti*PRICES.ryeti;}
+
+  // Misc items
+  getMiscLines().forEach(function(ml){
+    lines.push({n:'📋 '+ml.n+(ml.qty>1?' ×'+ml.qty:''),a:ml.a});
+    total+=ml.a;
+  });
 
   var ol=document.getElementById('olines');
   ol.innerHTML = lines.length===0?'<div class="oempty">Nothing selected.</div>'
@@ -1033,6 +1134,7 @@ function buildMeta(data) {
   if(tkts.all>0)parts.push(tkts.all+'×AllAccess');
   if(raff.ff>0)parts.push(raff.ff+'×50/50');
   if(raff.yeti>0)parts.push(raff.yeti+'×YetiRaffle');
+  getMiscLines().forEach(function(ml){ parts.push('Misc:'+ml.n); });
   if(selectedEntry)parts.push('CognitoEntry:'+selectedEntry.id);
   return {
     customer:name, memberNo:mem,
@@ -1137,7 +1239,7 @@ async function saveBoatToSupabase(data) {
       amountPaid:      data.total,
       paymentMethod:   data.pay,
       stripePaymentId: data.stripeId || null,
-      extrasJson: { cap:tkts.cap||0, pool:tkts.pool||0, ban:tkts.ban||0, all:tkts.all||0, raff_ff:raff.ff||0, raff_yeti:raff.yeti||0 },
+      extrasJson: { cap:tkts.cap||0, pool:tkts.pool||0, ban:tkts.ban||0, all:tkts.all||0, raff_ff:raff.ff||0, raff_yeti:raff.yeti||0, misc:getMiscLines() },
     };
     var resp = await fetch('/.netlify/functions/save-boat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     var result = await resp.json();
