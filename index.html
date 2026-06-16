@@ -161,6 +161,13 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 /* Already-paid TWT locked state */
 .tcard.paid{border-color:var(--green);background:#f0fff4;opacity:1;cursor:default}
 .tcard.paid .tn{color:var(--green)}
+.tchk{position:absolute;top:5px;right:6px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;transition:all .15s}
+.tcard{position:relative}
+.tcard.on .tchk{background:var(--gold);border-color:var(--gold)}
+.tcard.on .tchk::after{content:'✓'}
+.tsel{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:var(--gold);letter-spacing:.06em;margin-top:2px;opacity:0;transition:opacity .15s}
+.tcard.on .tsel{opacity:1}
+.tcard.paid .tsel{opacity:0}
 .tcard .ti{font-size:22px}
 .tcard .tn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--navy);margin-top:3px}
 
@@ -483,9 +490,9 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
         <div class="twt-dark">
           <div class="twt-dark-title">🏆 TWT — $100/div (opt-in at door)</div>
           <div class="twt-dark-grid">
-            <div class="tcard" id="tcard-inshore" onclick="togTwt('inshore')"><div class="ti">🐟</div><div class="tn">Inshore</div></div>
-            <div class="tcard" id="tcard-offshore" onclick="togTwt('offshore')"><div class="ti">🎣</div><div class="tn">Offshore</div></div>
-            <div class="tcard" id="tcard-tarpon" onclick="togTwt('tarpon')"><div class="ti">🦈</div><div class="tn">Tarpon</div></div>
+            <div class="tcard" id="tcard-inshore" onclick="togTwt('inshore')"><div class="tchk"></div><div class="ti">🐟</div><div class="tn">Inshore</div><div class="tsel">✓ Added</div></div>
+            <div class="tcard" id="tcard-offshore" onclick="togTwt('offshore')"><div class="tchk"></div><div class="ti">🎣</div><div class="tn">Offshore</div><div class="tsel">✓ Added</div></div>
+            <div class="tcard" id="tcard-tarpon" onclick="togTwt('tarpon')"><div class="tchk"></div><div class="ti">🦈</div><div class="tn">Tarpon</div><div class="tsel">✓ Added</div></div>
           </div>
         </div>
       </div>
