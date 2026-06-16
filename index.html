@@ -1142,7 +1142,9 @@ function calcTotal() {
   if (showBoatFee) { lines.push({n:'🚤 Boat Entry Fee',a:PRICES.boat}); total+=PRICES.boat; }
   activeDivs.forEach(function(d){ lines.push({n:dn[d]+' Div',a:PRICES.div}); total+=PRICES.div; });
   ['inshore','offshore','tarpon'].forEach(function(d){
-    if(twts[d]&&divs[d]){ lines.push({n:dn[d]+' TWT',a:PRICES.twt}); total+=PRICES.twt; }
+    var dc = document.getElementById('dcard-'+d);
+    var hasPaidDiv = dc && dc.classList.contains('paid');
+    if(twts[d] && (divs[d] || hasPaidDiv)){ lines.push({n:dn[d]+' TWT',a:PRICES.twt}); total+=PRICES.twt; }
   });
   [{k:'cap',l:'🎫 Captains Mtg',p:PRICES.cap},{k:'pool',l:'🎟 Pool Party',p:PRICES.pool},
    {k:'ban',l:'🍽 Banquet',p:PRICES.ban},{k:'all',l:'🎫 All-Access',p:PRICES.all}
@@ -1177,7 +1179,9 @@ function buildMeta(data) {
   var dn={inshore:'Inshore',offshore:'Offshore',tarpon:'Tarpon'};
   ['inshore','offshore','tarpon'].forEach(function(d){
     if(divs[d])parts.push(dn[d]+' Div');
-    if(twts[d]&&divs[d])parts.push(dn[d]+' TWT');
+    var dcM = document.getElementById('dcard-'+d);
+    var hasPaidDivM = dcM && dcM.classList.contains('paid');
+    if(twts[d]&&(divs[d]||hasPaidDivM))parts.push(dn[d]+' TWT');
   });
   if(tkts.cap>0)parts.push(tkts.cap+'×CapMtg');
   if(tkts.pool>0)parts.push(tkts.pool+'×Pool');
