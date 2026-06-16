@@ -6,7 +6,7 @@
 const https = require('https');
 
 const FORM = '_2026RoughRidersCharityFishingTournamentEntry';
-const MAX_ENTRY = 60;
+const MAX_ENTRY = 80;
 const BATCH     = 10;
 
 function cognitoGet(path) {
