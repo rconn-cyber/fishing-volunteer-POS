@@ -640,6 +640,8 @@ async function loadRoster() {
     if (data.error) throw new Error(data.error);
     roster = Array.isArray(data) ? data : (data.entries || []);
     if (!Array.isArray(roster)) throw new Error('Unexpected data shape');
+    // Most recent registration first
+    roster.sort(function(a,b){ return b.id - a.id; });
     renderRoster();
     updateStats();
   } catch(err) {
