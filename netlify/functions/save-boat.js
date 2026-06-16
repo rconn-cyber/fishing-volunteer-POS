@@ -8,8 +8,8 @@
  *   2. public.boat_registrations — new detailed table with TWT, payment, extras, etc.
  *
  * Env vars (set in Netlify for fishing-volunteer-POS site):
- *   SUPABASE_URL          https://qyoqyeaqacdjstvkonwx.supabase.co
- *   SUPABASE_SERVICE_KEY  <service_role secret key>
+ *   SUPABASE_URL          (set in Netlify environment variables)
+ *   SUPABASE_SERVICE_KEY  (set in Netlify environment variables)
  */
 
 const https = require('https');
