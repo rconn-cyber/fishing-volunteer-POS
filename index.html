@@ -38,13 +38,13 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .mnav-badge{position:absolute;top:6px;right:calc(50% - 22px);background:var(--green);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center}
 
 /* ── DESKTOP TABS ── */
-.desk-tabs{display:flex;background:var(--navy2);border-bottom:2px solid rgba(201,168,76,.2);padding:0 16px;gap:2px;position:sticky;top:52px;z-index:210}
+.desk-tabs{display:flex;background:var(--navy2);border-bottom:2px solid rgba(201,168,76,.2);padding:0 16px;gap:2px;position:sticky;top:0;z-index:210}
 .tab{padding:10px 18px;background:none;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);transition:all .15s;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tab:hover{color:rgba(255,255,255,.75)}
 .tab.on{color:var(--gold2);border-bottom-color:var(--gold)}
 
 /* ── SEARCH BAR ── */
-.searchbar{padding:10px 12px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;position:sticky;top:86px;z-index:200;flex-wrap:wrap}
+.searchbar{padding:10px 12px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;position:sticky;top:38px;z-index:200;flex-wrap:wrap}
 .srch{flex:1;min-width:120px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Barlow',sans-serif;font-size:16px;outline:none;transition:border-color .15s}
 .srch:focus{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.1)}
 .search-row2{display:flex;gap:6px;width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -58,7 +58,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 
 /* ── DESKTOP: side-by-side ── */
 .page-wrap{display:flex;gap:0;min-height:calc(100vh - 52px)}
-.main-col{flex:1;overflow-y:auto;min-width:0}
+.main-col{flex:1;overflow-y:auto;min-width:0;height:calc(100vh - 52px)}
 .pos-col{width:400px;flex-shrink:0;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
 
 /* ── ROSTER TABLE ── */
@@ -251,18 +251,18 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .page-wrap{flex-direction:column;min-height:unset}
+  .main-col{height:auto;overflow-y:visible}
   .pos-col{width:100%;position:static;height:auto;border-left:none;border-top:2px solid var(--border)}
-  .desk-tabs{display:none;height:0;overflow:hidden;padding:0;border:none}
+  .desk-tabs{display:none!important;height:0!important;min-height:0!important;overflow:hidden!important;padding:0!important;margin:0!important;border:none!important;visibility:hidden!important}
   .mob-nav{display:block}
   body{padding-bottom:58px}
-  .searchbar{top:52px;flex-wrap:wrap;gap:8px}
+  .searchbar{top:0;flex-wrap:wrap;gap:8px}
   .srch{min-width:0;flex:1 1 100%}
   .search-row2{width:100%}
   /* Mobile: show either roster OR pos panel, not both */
   .main-col.mob-hidden{display:none}
   .pos-col.mob-hidden{display:none}
   /* Prevent sticky search bar from covering first card */
-  .searchbar{position:sticky;top:52px}
   /* roster-wrap top padding must clear: header(52) + searchbar two rows (~108) */
   #rosterTab .roster-wrap,
   #logTab .roster-wrap,
@@ -306,16 +306,17 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 </div>
 
 <!-- DESKTOP TABS -->
-<div class="desk-tabs">
-  <button class="tab on" id="tab-roster" onclick="showTab('roster')">📋 Roster</button>
-  <button class="tab" id="tab-log" onclick="showTab('log')">📄 Log</button>
-  <button class="tab" id="tab-help" onclick="showTab('help')">❓ How To</button>
-</div>
-
 <div class="page-wrap">
 
 <!-- ════ LEFT: ROSTER ════ -->
 <div class="main-col" id="mainCol">
+
+  <!-- Desktop tabs — inside main-col so display:none truly removes them on mobile -->
+  <div class="desk-tabs">
+    <button class="tab on" id="tab-roster" onclick="showTab('roster')">📋 Roster</button>
+    <button class="tab" id="tab-log" onclick="showTab('log')">📄 Log</button>
+    <button class="tab" id="tab-help" onclick="showTab('help')">❓ How To</button>
+  </div>
 
   <!-- Search bar -->
   <div class="searchbar">
