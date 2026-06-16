@@ -154,12 +154,12 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .twt-dark{background:#fffbec;border:1px solid #e8d99a;border-radius:8px;padding:10px 12px;margin-bottom:12px}
 .twt-dark-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--golddim);margin-bottom:10px}
 .twt-dark-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.tcard{border:1px solid var(--border);border-radius:7px;padding:12px 6px;cursor:pointer;background:#fff;transition:all .12s;text-align:center;opacity:.35;pointer-events:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.tcard.elig{opacity:1;pointer-events:auto}
+.tcard{border:1px solid var(--border);border-radius:7px;padding:12px 6px;cursor:default;background:#fff;transition:all .12s;text-align:center;opacity:.35;user-select:none;-webkit-tap-highlight-color:transparent}
+.tcard.elig{opacity:1;cursor:pointer}
 .tcard.elig:active{transform:scale(.97)}
-.tcard.on{border-color:var(--gold);background:#fffbec;opacity:1;pointer-events:auto}
+.tcard.on{border-color:var(--gold);background:#fffbec;opacity:1;cursor:pointer}
 /* Already-paid TWT locked state */
-.tcard.paid{border-color:var(--green);background:#f0fff4;opacity:1;pointer-events:none}
+.tcard.paid{border-color:var(--green);background:#f0fff4;opacity:1;cursor:default}
 .tcard.paid .tn{color:var(--green)}
 .tcard .ti{font-size:22px}
 .tcard .tn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--navy);margin-top:3px}
