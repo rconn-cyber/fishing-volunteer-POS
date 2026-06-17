@@ -97,7 +97,7 @@ function mapEntry(e) {
   const idNum = idRaw.includes('-') ? parseInt(idRaw.split('-')[1]) : idRaw;
 
   // ── Extract ticket quantities from WeekendEventTickets ──────
-  // Read directly from structured Cognito fields (most reliable).
+  // Read directly from the structured Cognito fields (most reliable).
   const wet  = e.WeekendEventTickets || {};
   const cap2 = wet.CaptainsMeeting2  || {};
   const pool2= wet.PoolParty2        || {};
@@ -111,12 +111,10 @@ function mapEntry(e) {
     all:  parseInt(all2.AllAccessWristbandsQuantity9000)     || 0,
   };
 
-  // Each boat entry includes 1 captain's meeting ticket (baked into entry fee).
-  // Subtract it so POS only shows EXTRA pre-purchased tickets.
+  // NOTE: CaptainsMeetingTicketsQuantity2000 counts EXTRA purchased tickets only.
+  // The 1 ticket included with the boat entry fee is NOT counted here — it's
+  // baked into BoatEntryFee300. So no subtraction needed.
   const isBoat = !!e.AreYouEnteringABoat;
-  if (isBoat && tickets.cap > 0) {
-    tickets.cap = Math.max(0, tickets.cap - 1);
-  }
 
   return {
     id:            idNum,
