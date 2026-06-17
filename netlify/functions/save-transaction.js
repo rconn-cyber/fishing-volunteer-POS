@@ -26,7 +26,7 @@ function supabasePost(supabaseUrl, serviceKey, table, body) {
   return new Promise((resolve, reject) => {
     const bodyStr = JSON.stringify(body);
     const options = {
-      hostname: new URL(supabaseUrl).hostname,
+      hostname: supabaseUrl.replace('https://', '').replace('http://', '').split('/')[0],
       path: `/rest/v1/${table}`,
       method: 'POST',
       headers: {

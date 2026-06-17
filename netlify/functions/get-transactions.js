@@ -18,10 +18,10 @@ const https = require('https');
 
 function supabaseGet(supabaseUrl, serviceKey, table, params) {
   return new Promise((resolve, reject) => {
-    const qs = new URLSearchParams(params).toString();
-    const path = `/rest/v1/${table}?${qs}`;
+    // params unused — path built manually below
+    const path = `/rest/v1/${table}`;
     const options = {
-      hostname: new URL(supabaseUrl).hostname,
+      hostname: supabaseUrl.replace('https://', '').replace('http://', '').split('/')[0],
       path,
       method: 'GET',
       headers: {
@@ -90,7 +90,7 @@ exports.handler = async function (event) {
 
   const result = await new Promise((resolve, reject) => {
     const options = {
-      hostname: new URL(SUPABASE_URL).hostname,
+      hostname: SUPABASE_URL.replace('https://', '').replace('http://', '').split('/')[0],
       path,
       method: 'GET',
       headers: {
