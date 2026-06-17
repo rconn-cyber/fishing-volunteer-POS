@@ -104,7 +104,10 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: {
-        ...corsHeaders(),
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
       },
       body: JSON.stringify({
