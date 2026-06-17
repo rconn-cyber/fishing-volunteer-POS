@@ -272,6 +272,18 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 .add-misc-btn{width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .14s;-webkit-tap-highlight-color:transparent}
 .add-misc-btn:hover{border-color:var(--water);color:var(--water);background:#f0f6ff}
 
+/* ── AUCTION QUICK-ADD ── */
+.auction-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.auction-btn{background:#fff;border:2px solid var(--border);border-radius:10px;padding:10px 10px 9px;cursor:pointer;text-align:left;transition:all .15s;-webkit-tap-highlight-color:transparent;position:relative}
+.auction-btn:hover{border-color:var(--gold2);background:#fffdf0}
+.auction-btn.added{border-color:var(--green);background:#f0fff4}
+.auction-btn .ab-flag{font-size:18px;margin-bottom:3px}
+.auction-btn .ab-name{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);line-height:1.3;margin-bottom:4px}
+.auction-btn .ab-bid{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--green)}
+.auction-btn .ab-check{position:absolute;top:7px;right:8px;font-size:13px;display:none}
+.auction-btn.added .ab-check{display:block}
+
+
 /* ── HELP ── */
 .help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding:4px 0 16px}
 .help-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
@@ -562,6 +574,44 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
       </div>
     </div>
 
+
+    <!-- Auction Items -->
+    <div class="pos-section">
+      <div class="pos-section-title">🏆 Auction Items</div>
+      <div class="auction-grid">
+        <button class="auction-btn" id="abtn-tarpon" onclick="addAuctionItem('tarpon')">
+          <div class="ab-flag">🎣</div>
+          <div class="ab-name">Tarpon Fishing w/ Capt. Luttman</div>
+          <div class="ab-bid" id="abid-tarpon">$500</div>
+          <div class="ab-check">✓</div>
+        </button>
+        <button class="auction-btn" id="abtn-costarica" onclick="addAuctionItem('costarica')">
+          <div class="ab-flag">🌴</div>
+          <div class="ab-name">Costa Rica Fishing Adventure</div>
+          <div class="ab-bid" id="abid-costarica">$1,400</div>
+          <div class="ab-check">✓</div>
+        </button>
+        <button class="auction-btn" id="abtn-argentina" onclick="addAuctionItem('argentina')">
+          <div class="ab-flag">🦅</div>
+          <div class="ab-name">Argentina Dove Hunting for Two</div>
+          <div class="ab-bid" id="abid-argentina">$1,850</div>
+          <div class="ab-check">✓</div>
+        </button>
+        <button class="auction-btn" id="abtn-safari" onclick="addAuctionItem('safari')">
+          <div class="ab-flag">🦁</div>
+          <div class="ab-name">South Africa Safari for Two</div>
+          <div class="ab-bid" id="abid-safari">$3,000</div>
+          <div class="ab-check">✓</div>
+        </button>
+        <button class="auction-btn" id="abtn-abyss" onclick="addAuctionItem('abyss')">
+          <div class="ab-flag">🔋</div>
+          <div class="ab-name">ABYSS 36V Lithium Battery Kit</div>
+          <div class="ab-bid" id="abid-abyss">$1,000</div>
+          <div class="ab-check">✓</div>
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--mid);margin-top:4px;font-style:italic">Tap to add at current bid price · tap again to remove</div>
+    </div>
 
     <!-- Miscellaneous -->
     <div class="pos-section">
@@ -1646,6 +1696,56 @@ function renderLog() {
     +'</tbody></table></div>';
 }
 
+
+
+// ── AUCTION ITEMS ─────────────────────────────────────────────────────────────
+var AUCTION_CATALOG = {
+  tarpon:    { name: 'Tarpon Fishing — Capt. Matt Luttman', price: 500,  flag: '🎣' },
+  costarica: { name: 'Costa Rica Fishing Adventure — Nosara', price: 1400, flag: '🌴' },
+  argentina: { name: 'Argentina Dove Hunting for Two', price: 1850, flag: '🦅' },
+  safari:    { name: 'Monkane Safaris — South Africa for Two', price: 3000, flag: '🦁' },
+  abyss:     { name: 'ABYSS 36V 60Ah Lithium Battery Kit + Charger', price: 1000, flag: '🔋' },
+};
+var auctionAdded = {}; // key → miscItem id
+
+function addAuctionItem(key) {
+  var item = AUCTION_CATALOG[key];
+  if (!item) return;
+  var btn = document.getElementById('abtn-' + key);
+
+  // Toggle off if already added
+  if (auctionAdded[key]) {
+    removeMiscRow(auctionAdded[key]);
+    delete auctionAdded[key];
+    if (btn) btn.classList.remove('added');
+    calcTotal(); updateMobPosBadge();
+    return;
+  }
+
+  // Read the displayed bid price (volunteer may have updated it)
+  var bidEl = document.getElementById('abid-' + key);
+  var price = item.price;
+  if (bidEl) {
+    var parsed = parseFloat(bidEl.textContent.replace(/[$,]/g, ''));
+    if (!isNaN(parsed) && parsed > 0) price = parsed;
+  }
+
+  // Add as a misc row
+  var id = ++miscIdSeq;
+  miscItems.push({ id: id, name: item.flag + ' ' + item.name, desc: 'Auction item', price: price, qty: 1 });
+  auctionAdded[key] = id;
+  if (btn) btn.classList.add('added');
+  renderMiscRows();
+  calcTotal(); updateMobPosBadge();
+}
+
+// When clearPOS is called, reset auction button states too
+var _origClearPOS = clearPOS;
+clearPOS = function() {
+  _origClearPOS();
+  auctionAdded = {};
+  document.querySelectorAll('.auction-btn').forEach(function(b){ b.classList.remove('added'); });
+};
 
 loadRoster();
 calcTotal();
