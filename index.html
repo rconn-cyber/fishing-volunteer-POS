@@ -879,7 +879,7 @@ function renderRoster() {
       +'<div class="mcard-top">'
       +'<div class="mcard-icon '+iconClass+'">'+icon+'</div>'
       +'<div class="mcard-info">'
-      +'<div class="mcard-name">'+esc(e.name)+'</div>'
+      +'<div class="mcard-name">'+esc(e.name)+(e.boatNumber?'<span style="font-family:\'Bebas Neue\',sans-serif;font-size:15px;color:#8a9ab5;margin-left:6px;letter-spacing:1px">#'+e.boatNumber+'</span>':'')+'</div>'
       +'<div class="mcard-sub">'+(e.teamName?esc(e.teamName)+' · ':'')+paid+(e.isBoat?' · Boat':'')+'</div>'
       +'</div>'
       +'<div class="mcard-paid">'+(divHtml||'')+'</div>'
@@ -963,7 +963,7 @@ function doSelectEntry(id) {
     posMode = 'addon';
     document.getElementById('posModeBadge').className = 'pos-mode-badge addon';
     document.getElementById('posModeBadge').textContent = '➕ Add-On: ' + entry.name;
-    document.getElementById('posContext').textContent = entry.teamName || 'Pre-registered';
+    document.getElementById('posContext').textContent = (entry.boatNumber ? 'Boat #'+entry.boatNumber+' · ' : '') + (entry.teamName || 'Pre-registered');
     document.getElementById('boatFeeRow').style.display = 'none';
     document.getElementById('divLabel').textContent = 'Divisions';
     document.getElementById('regSection').style.display = entry.isBoat ? '' : 'none';
@@ -1035,7 +1035,7 @@ function doSelectEntry(id) {
     posMode = 'checkin';
     document.getElementById('posModeBadge').className = 'pos-mode-badge checkin';
     document.getElementById('posModeBadge').textContent = '✓ Check-In: ' + entry.name;
-    document.getElementById('posContext').textContent = entry.teamName || '';
+    document.getElementById('posContext').textContent = (entry.boatNumber ? 'Boat #'+entry.boatNumber+' · ' : '') + (entry.teamName || '');
     document.getElementById('regSection').style.display = 'none';
   }
 
