@@ -1393,8 +1393,7 @@ function buildReceipt(d,s){
     +'<p>'+new Date().toLocaleString()+'</p>'
     +'<table><tbody>'+rows+'</tbody>'
     +'<tfoot><tr><td>TOTAL</td><td style="text-align:right">$'+d.total.toFixed(2)+'</td></tr></tfoot></table>'
-    +'<div class="footer">Thank you for supporting the Rough Riders!<br>roughridersfishing.org</div>
-</body></html>';
+    +'<div class="footer">Thank you for supporting the Rough Riders!<br>roughridersfishing.org</div></body></html>';
 }
 
 function renderLog() {
@@ -1433,10 +1432,37 @@ function initOperator() {
 function showOpModal() {
   var overlay = document.getElementById('opOverlay');
   overlay.style.display = 'flex';
-  // Reset
+  // Reset buttons
   document.querySelectorAll('.op-btn').forEach(function(b){ b.classList.remove('selected'); });
   document.getElementById('opCustom').value = '';
-  document.getElementById('opGo').disabled = true;
+  document.getElementById('opGo').dataset.chosen = '';
+
+  if (operatorName) {
+    // Changing operator — update title, pre-fill current name, enable button
+    document.querySelector('.op-title').textContent = 'Change Operator';
+    document.querySelector('.op-sub').textContent = 'Currently: ' + operatorName + ' — tap a name or edit below';
+    document.getElementById('opGo').textContent = 'Save →';
+    // Pre-select if it matches a preset button
+    var matched = false;
+    document.querySelectorAll('.op-btn').forEach(function(b){
+      if (b.textContent.trim() === operatorName) {
+        b.classList.add('selected');
+        document.getElementById('opGo').dataset.chosen = operatorName;
+        matched = true;
+      }
+    });
+    if (!matched) {
+      // Put current name in custom field so it's editable
+      document.getElementById('opCustom').value = operatorName;
+    }
+    document.getElementById('opGo').disabled = false;
+  } else {
+    // First time — fresh state
+    document.querySelector('.op-title').textContent = "Who’s at the desk?";
+    document.querySelector('.op-sub').textContent = 'Tap your name — it’ll be recorded on every transaction';
+    document.getElementById('opGo').textContent = "Let’s Go →";
+    document.getElementById('opGo').disabled = true;
+  }
 }
 
 function selectOp(btn, name) {
@@ -1469,6 +1495,18 @@ function confirmOp() {
 function changeOperator() {
   showOpModal();
 }
+
+// Allow Escape or tap-outside to dismiss when changing (not on first load)
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && operatorName && document.getElementById('opOverlay').style.display !== 'none') {
+    document.getElementById('opOverlay').style.display = 'none';
+  }
+});
+document.getElementById('opOverlay').addEventListener('click', function(e){
+  if (operatorName && e.target === this) {
+    this.style.display = 'none';
+  }
+});
 
 // ── SUPABASE TRANSACTION LOG ───────────────────────────────────────────────────
 var allTransactions = []; // from Supabase
