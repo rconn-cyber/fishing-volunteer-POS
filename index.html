@@ -330,16 +330,16 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
     <input class="srch" id="searchInput" placeholder="🔍  Search name, captain, team…" oninput="filterRoster()" autocomplete="off">
     <div class="search-row2">
       <div class="filter-btns">
-        <button class="fbtn on" id="filter-all" onclick="setFilter('all')">All</button>
-        <button class="fbtn" id="filter-boats" onclick="setFilter('boats')">🚤</button>
-        <button class="fbtn" id="filter-tickets" onclick="setFilter('tickets')">🎟</button>
-        <button class="fbtn" id="filter-notchecked" onclick="setFilter('notchecked')">⏳</button>
+        <button class="fbtn on" id="filter-all" onclick="setFilter('all')" title="Show all registrants">All</button>
+        <button class="fbtn" id="filter-boats" onclick="setFilter('boats')" title="Show boats only">🚤</button>
+        <button class="fbtn" id="filter-tickets" onclick="setFilter('tickets')" title="Show tickets-only registrants (no boat)">🎟</button>
+        <button class="fbtn" id="filter-notchecked" onclick="setFilter('notchecked')" title="Show only people not yet checked in">⏳</button>
       </div>
-      <button class="reload-btn" id="reloadBtn" onclick="loadRoster()">
+      <button class="reload-btn" id="reloadBtn" onclick="loadRoster()" title="Reload roster from Cognito — use if someone just registered online">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         Refresh
       </button>
-      <button class="walkup-btn" onclick="startWalkup()">＋ Walk-Up</button>
+      <button class="walkup-btn" onclick="startWalkup()" title="Register a new boat or ticket buyer not in the system">＋ Walk-Up</button>
     </div>
   </div>
 
