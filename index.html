@@ -1418,6 +1418,18 @@ var operatorName = '';
 var PRESET_OPS = ['Robin','Rick','Joe','Jeff'];
 
 function initOperator() {
+  // Wire up dismiss listeners now that DOM is ready
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && operatorName && document.getElementById('opOverlay').style.display !== 'none') {
+      document.getElementById('opOverlay').style.display = 'none';
+    }
+  });
+  document.getElementById('opOverlay').addEventListener('click', function(e){
+    if (operatorName && e.target === this) {
+      this.style.display = 'none';
+    }
+  });
+
   var saved = localStorage.getItem('rr_pos_operator');
   if (saved) {
     operatorName = saved;
@@ -1496,17 +1508,7 @@ function changeOperator() {
   showOpModal();
 }
 
-// Allow Escape or tap-outside to dismiss when changing (not on first load)
-document.addEventListener('keydown', function(e){
-  if (e.key === 'Escape' && operatorName && document.getElementById('opOverlay').style.display !== 'none') {
-    document.getElementById('opOverlay').style.display = 'none';
-  }
-});
-document.getElementById('opOverlay').addEventListener('click', function(e){
-  if (operatorName && e.target === this) {
-    this.style.display = 'none';
-  }
-});
+// Escape/click-outside listeners registered in initOperator() after DOM ready
 
 // ── SUPABASE TRANSACTION LOG ───────────────────────────────────────────────────
 var allTransactions = []; // from Supabase
