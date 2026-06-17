@@ -224,6 +224,35 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
 
 .rdiv{border:none;border-top:1px solid var(--border);margin:8px 0}
 .note{font-size:11px;color:var(--mid);font-style:italic;margin-top:4px}
+
+/* ── OPERATOR MODAL ── */
+.op-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.op-modal{background:#fff;border-radius:16px;width:100%;max-width:400px;padding:32px 28px;box-shadow:0 8px 40px rgba(0,0,0,.35)}
+.op-logo{text-align:center;font-size:40px;margin-bottom:8px}
+.op-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:24px;text-align:center;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.op-sub{text-align:center;font-size:13px;color:var(--mid);margin-bottom:20px}
+.op-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.op-btn{padding:18px 10px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);transition:all .13s;text-align:center;-webkit-tap-highlight-color:transparent}
+.op-btn:hover{border-color:var(--navy);background:#f0f4ff}
+.op-btn.selected{border-color:var(--navy);background:var(--navy);color:var(--gold2)}
+.op-or{text-align:center;color:var(--mid);font-size:12px;margin:10px 0;font-style:italic}
+.op-custom{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Barlow',sans-serif;font-size:17px;color:var(--dark);outline:none;margin-bottom:14px;-webkit-appearance:none}
+.op-custom:focus{border-color:var(--water);box-shadow:0 0 0 3px rgba(10,74,110,.08)}
+.op-go{width:100%;padding:16px;background:var(--navy);color:var(--gold2);border:none;border-radius:9px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.op-go:disabled{opacity:.35;cursor:not-allowed}
+/* Operator badge in header */
+.op-badge{background:rgba(201,168,76,.18);color:var(--gold2);border:1px solid rgba(201,168,76,.35);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:4px;cursor:pointer;white-space:nowrap}
+/* Log enhancements */
+.log-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.log-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy)}
+.log-filters{display:flex;gap:6px;flex-wrap:wrap}
+.log-fbtn{padding:7px 12px;border:1.5px solid var(--border);border-radius:7px;background:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .14s;white-space:nowrap}
+.log-fbtn.on{background:var(--navy);color:var(--gold2);border-color:var(--navy)}
+.log-totals{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.log-tot{background:#f7f9ff;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--mid)}
+.log-tot span{color:var(--navy);font-size:16px}
+.log-loading{color:var(--mid);font-size:13px;font-style:italic;padding:20px 0}
+
 .no-results{text-align:center;padding:32px;color:var(--mid);font-size:14px}
 .walkup-link{text-align:center;padding:8px;font-size:13px;color:var(--mid)}
 .walkup-link a{color:var(--water);font-weight:600;cursor:pointer;text-decoration:none}
@@ -308,7 +337,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
       <div class="stat">🎟 <span id="statTickets">—</span></div>
       <div class="stat ci-chip" id="statCheckin">✓ <span id="ciCount">0</span></div>
     </div>
-    <div class="hbadge">🔒 Staff</div>
+    <div class="op-badge" id="opBadge" onclick="changeOperator()" title="Tap to change operator">👤 <span id="opName">…</span></div>
   </div>
 </div>
 
@@ -372,7 +401,14 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
   <!-- Log tab -->
   <div id="logTab" style="display:none">
     <div class="roster-wrap">
-      <div id="logContent" style="color:var(--mid);font-size:13px;padding:20px">No transactions yet this session.</div>
+      <div class="log-hdr">
+        <div class="log-title">💳 Transaction Log</div>
+        <div class="log-filters" id="logFilters">
+          <button class="log-fbtn on" data-op="all" onclick="logFilter(this)">All</button>
+        </div>
+      </div>
+      <div class="log-totals" id="logTotals"></div>
+      <div id="logContent" style="color:var(--mid);font-size:13px;padding:20px">Loading…</div>
     </div>
   </div>
 
@@ -701,7 +737,8 @@ function updateStats() {
   document.getElementById('ciCount').textContent = ci;
   // Update mobile log badge
   var logBadge = document.getElementById('mobLogBadge');
-  if (txlog.length > 0) { logBadge.textContent = txlog.length; logBadge.style.display=''; }
+  var logCount = allTransactions.length || txlog.length;
+  if (logCount > 0) { logBadge.textContent = logCount; logBadge.style.display=''; }
   else logBadge.style.display='none';
 }
 
@@ -1319,6 +1356,7 @@ function finalize(data,stripe){
   txlog.push(data); updateStats();
   var pw=window.open('','_blank','width=400,height=680');
   if (pw) { pw.document.write(buildReceipt(data,stripe)); pw.document.close(); setTimeout(function(){pw.print();},400); }
+  saveTransactionToSupabase(data);
   if(data.mode==='walkin'){ saveBoatToSupabase(data); }
   closeModal(); clearPOS();
 }
@@ -1355,7 +1393,8 @@ function buildReceipt(d,s){
     +'<p>'+new Date().toLocaleString()+'</p>'
     +'<table><tbody>'+rows+'</tbody>'
     +'<tfoot><tr><td>TOTAL</td><td style="text-align:right">$'+d.total.toFixed(2)+'</td></tr></tfoot></table>'
-    +'<div class="footer">Thank you for supporting the Rough Riders!<br>roughridersfishing.org</div></body></html>';
+    +'<div class="footer">Thank you for supporting the Rough Riders!<br>roughridersfishing.org</div>
+</body></html>';
 }
 
 function renderLog() {
@@ -1373,9 +1412,205 @@ function renderLog() {
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function cap(s){return String(s||'').charAt(0).toUpperCase()+String(s||'').slice(1);}
 
+
+// ── OPERATOR / SESSION ────────────────────────────────────────────────────────
+var operatorName = '';
+
+var PRESET_OPS = ['Robin','Rick','Joe','Jeff'];
+
+function initOperator() {
+  var saved = localStorage.getItem('rr_pos_operator');
+  if (saved) {
+    operatorName = saved;
+    document.getElementById('opName').textContent = operatorName;
+    buildLogFilters();
+    loadTransactionLog();
+  } else {
+    showOpModal();
+  }
+}
+
+function showOpModal() {
+  var overlay = document.getElementById('opOverlay');
+  overlay.style.display = 'flex';
+  // Reset
+  document.querySelectorAll('.op-btn').forEach(function(b){ b.classList.remove('selected'); });
+  document.getElementById('opCustom').value = '';
+  document.getElementById('opGo').disabled = true;
+}
+
+function selectOp(btn, name) {
+  document.querySelectorAll('.op-btn').forEach(function(b){ b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('opCustom').value = '';
+  document.getElementById('opGo').disabled = false;
+  document.getElementById('opGo').dataset.chosen = name;
+}
+
+function selectOpCustom(inp) {
+  document.querySelectorAll('.op-btn').forEach(function(b){ b.classList.remove('selected'); });
+  document.getElementById('opGo').disabled = inp.value.trim().length < 2;
+  document.getElementById('opGo').dataset.chosen = '';
+}
+
+function confirmOp() {
+  var chosen = document.getElementById('opGo').dataset.chosen;
+  var custom = document.getElementById('opCustom').value.trim();
+  var name = chosen || custom;
+  if (!name || name.length < 2) return;
+  operatorName = name;
+  localStorage.setItem('rr_pos_operator', operatorName);
+  document.getElementById('opName').textContent = operatorName;
+  document.getElementById('opOverlay').style.display = 'none';
+  buildLogFilters();
+  loadTransactionLog();
+}
+
+function changeOperator() {
+  showOpModal();
+}
+
+// ── SUPABASE TRANSACTION LOG ───────────────────────────────────────────────────
+var allTransactions = []; // from Supabase
+var logFilterOp = 'all';
+
+async function saveTransactionToSupabase(data) {
+  try {
+    var payload = {
+      operator_name:    operatorName,
+      buyer_name:       data.name,
+      member_number:    data.member || '999999',
+      tx_mode:          data.mode,
+      payment_method:   data.pay,
+      amount_paid:      data.total,
+      stripe_id:        data.stripeId || null,
+      line_items:       data.lines,
+      contact:          data.contact || null,
+    };
+    var resp = await fetch('/.netlify/functions/save-transaction', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var result = await resp.json();
+    if (!result.success) console.warn('save-transaction warning:', result.error);
+    else {
+      console.log('Transaction saved:', result.id);
+      // Refresh log if visible
+      loadTransactionLog();
+    }
+  } catch(err) { console.warn('save-transaction error (non-fatal):', err.message); }
+}
+
+async function loadTransactionLog() {
+  var el = document.getElementById('logContent');
+  el.innerHTML = '<div class="log-loading">Loading transactions…</div>';
+  try {
+    var resp = await fetch('/.netlify/functions/get-transactions');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Unknown error');
+    allTransactions = data.transactions || [];
+    renderLog();
+  } catch(err) {
+    // Fall back to session-only log
+    allTransactions = txlog.map(function(t){ return Object.assign({}, t, {operator_name: operatorName, created_at: new Date().toISOString()}); });
+    renderLog();
+    console.warn('loadTransactionLog fallback to session:', err.message);
+  }
+}
+
+function buildLogFilters() {
+  var container = document.getElementById('logFilters');
+  if (!container) return;
+  // Collect unique operators from current transactions + current operator
+  var ops = ['all'];
+  allTransactions.forEach(function(t){ if(t.operator_name && !ops.includes(t.operator_name)) ops.push(t.operator_name); });
+  if (operatorName && !ops.includes(operatorName)) ops.push(operatorName);
+  container.innerHTML = ops.map(function(op){
+    return '<button class="log-fbtn'+(logFilterOp===op?' on':'')+'" data-op="'+op+'" onclick="logFilter(this)">'+(op==='all'?'All':op)+'</button>';
+  }).join('');
+}
+
+function logFilter(btn) {
+  logFilterOp = btn.dataset.op;
+  document.querySelectorAll('.log-fbtn').forEach(function(b){ b.classList.toggle('on', b.dataset.op===logFilterOp); });
+  renderLog();
+}
+
+function renderLog() {
+  buildLogFilters();
+  var el = document.getElementById('logContent');
+  var filtered = logFilterOp === 'all'
+    ? allTransactions
+    : allTransactions.filter(function(t){ return t.operator_name === logFilterOp; });
+
+  // Totals bar
+  var totEl = document.getElementById('logTotals');
+  if (totEl) {
+    var totalAmt = filtered.reduce(function(s,t){ return s+(t.amount_paid||t.total||0); },0);
+    var cashAmt  = filtered.filter(function(t){ return (t.payment_method||t.pay)==='cash'; }).reduce(function(s,t){ return s+(t.amount_paid||t.total||0); },0);
+    var cardAmt  = totalAmt - cashAmt;
+    totEl.innerHTML =
+      '<div class="log-tot">Transactions: <span>'+filtered.length+'</span></div>'+
+      '<div class="log-tot">Total: <span>$'+totalAmt.toFixed(2)+'</span></div>'+
+      '<div class="log-tot">💵 Cash: <span>$'+cashAmt.toFixed(2)+'</span></div>'+
+      '<div class="log-tot">💳 Card: <span>$'+cardAmt.toFixed(2)+'</span></div>';
+  }
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="color:var(--mid);padding:20px;font-size:13px">No transactions'+(logFilterOp!=='all'?' for '+logFilterOp:'')+' yet.</div>';
+    return;
+  }
+
+  el.innerHTML = '<div style="overflow-x:auto"><table class="roster-table"><thead><tr>'
+    +'<th>#</th><th>Time</th><th>Operator</th><th>Buyer</th><th>Mode</th><th>Payment</th><th>Total</th><th>Stripe ID</th>'
+    +'</tr></thead><tbody>'
+    + filtered.slice().reverse().map(function(t, i){
+        var ts = t.created_at ? new Date(t.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—';
+        var pay = (t.payment_method||t.pay)==='cash' ? '💵 Cash' : '💳 Card';
+        var sid = t.stripe_id || t.stripeId || '—';
+        var op  = t.operator_name || '—';
+        var mode = t.tx_mode || t.mode || '—';
+        var amt = (t.amount_paid !== undefined ? t.amount_paid : t.total) || 0;
+        return '<tr>'
+          +'<td style="color:var(--mid);font-size:12px">'+(filtered.length-i)+'</td>'
+          +'<td style="font-size:12px;color:var(--mid)">'+ts+'</td>'
+          +'<td><strong style="color:var(--navy)">'+esc(op)+'</strong></td>'
+          +'<td>'+esc(t.buyer_name||t.name)+'</td>'
+          +'<td style="font-size:12px">'+esc(mode)+'</td>'
+          +'<td>'+pay+'</td>'
+          +'<td style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;color:var(--green)">$'+amt.toFixed(2)+'</td>'
+          +'<td style="font-size:10px;color:var(--mid)">'+esc(sid)+'</td>'
+          +'</tr>';
+      }).join('')
+    +'</tbody></table></div>';
+}
+
+
 loadRoster();
 calcTotal();
+initOperator();
 window.scrollTo(0,0);
 </script>
+
+<!-- OPERATOR NAME MODAL -->
+<div id="opOverlay" class="op-overlay" style="display:none">
+  <div class="op-modal">
+    <div class="op-logo">⚓</div>
+    <div class="op-title">Who's at the desk?</div>
+    <div class="op-sub">Tap your name — it'll be recorded on every transaction</div>
+    <div class="op-btns" id="opBtns">
+      <button class="op-btn" onclick="selectOp(this,'Robin')">Robin</button>
+      <button class="op-btn" onclick="selectOp(this,'Rick')">Rick</button>
+      <button class="op-btn" onclick="selectOp(this,'Joe')">Joe</button>
+      <button class="op-btn" onclick="selectOp(this,'Jeff')">Jeff</button>
+    </div>
+    <div class="op-or">— or enter a name —</div>
+    <input class="op-custom" id="opCustom" type="text" placeholder="Custom name…" oninput="selectOpCustom(this)" autocomplete="off" maxlength="40">
+    <button class="op-go" id="opGo" onclick="confirmOp()" disabled>Let's Go →</button>
+  </div>
+</div>
+
 </body>
 </html>
