@@ -1,12 +1,12 @@
 /**
  * get-registrations.js
- * Fetches entries 1-60 from Cognito Form 187 individually.
+ * Fetches entries 1-100 from Cognito Form 187 individually.
  */
 
 const https = require('https');
 
 const FORM = '_2026RoughRidersCharityFishingTournamentEntry';
-const MAX_ENTRY = 80;
+const MAX_ENTRY = 100;
 const BATCH     = 10;
 
 function cognitoGet(path) {
@@ -96,22 +96,25 @@ function mapEntry(e) {
   const idRaw = e.Id || '';
   const idNum = idRaw.includes('-') ? parseInt(idRaw.split('-')[1]) : idRaw;
 
-  // ── Extract ticket quantities from Order.Items ──────────────
-  // Each item has a Name and Quantity. Map known Cognito product names.
-  const tickets = { cap: 0, pool: 0, ban: 0, all: 0 };
-  const orderItems = (e.Order && Array.isArray(e.Order.Items)) ? e.Order.Items : [];
-  orderItems.forEach(function(item) {
-    const n = (item.Name || item.ProductName || item.Description || '').toLowerCase();
-    const qty = parseInt(item.Quantity) || 1;
-    if (n.includes("captain")) tickets.cap += qty;
-    if (n.includes("pool"))    tickets.pool += qty;
-    if (n.includes("banquet") || n.includes("award") || n.includes("dinner")) tickets.ban += qty;
-    if (n.includes("all-access") || n.includes("all access")) tickets.all += qty;
-  });
-  // Each boat entry includes 1 captain's meeting ticket by default
+  // ── Extract ticket quantities from WeekendEventTickets ──────
+  // Read directly from structured Cognito fields (most reliable).
+  const wet  = e.WeekendEventTickets || {};
+  const cap2 = wet.CaptainsMeeting2  || {};
+  const pool2= wet.PoolParty2        || {};
+  const ban2 = wet.AwardsBanquet2    || {};
+  const all2 = wet.AllAccess         || {};
+
+  const tickets = {
+    cap:  parseInt(cap2.CaptainsMeetingTicketsQuantity2000)  || 0,
+    pool: parseInt(pool2.PoolPartyTicketsQuantity2000)       || 0,
+    ban:  parseInt(ban2.AwardsBanquetTicketsQuantity)        || 0,
+    all:  parseInt(all2.AllAccessWristbandsQuantity9000)     || 0,
+  };
+
+  // Each boat entry includes 1 captain's meeting ticket (baked into entry fee).
+  // Subtract it so POS only shows EXTRA pre-purchased tickets.
   const isBoat = !!e.AreYouEnteringABoat;
   if (isBoat && tickets.cap > 0) {
-    // The included ticket is baked into the entry fee — extras are above 1
     tickets.cap = Math.max(0, tickets.cap - 1);
   }
 
