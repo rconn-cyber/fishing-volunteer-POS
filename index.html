@@ -647,6 +647,25 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
   </div>
 </div>
 
+<!-- OPERATOR NAME MODAL -->
+<div id="opOverlay" class="op-overlay" style="display:none">
+  <div class="op-modal">
+    <div class="op-logo">⚓</div>
+    <div class="op-title">Who's at the desk?</div>
+    <div class="op-sub">Tap your name — it'll be recorded on every transaction</div>
+    <div class="op-btns" id="opBtns">
+      <button class="op-btn" onclick="selectOp(this,'Robin')">Robin</button>
+      <button class="op-btn" onclick="selectOp(this,'Rick')">Rick</button>
+      <button class="op-btn" onclick="selectOp(this,'Joe')">Joe</button>
+      <button class="op-btn" onclick="selectOp(this,'Jeff')">Jeff</button>
+    </div>
+    <div class="op-or">— or enter a name —</div>
+    <input class="op-custom" id="opCustom" type="text" placeholder="Custom name…" oninput="selectOpCustom(this)" autocomplete="off" maxlength="40">
+    <button class="op-go" id="opGo" onclick="confirmOp()" disabled>Let's Go →</button>
+  </div>
+</div>
+
+
 <script>
 // ── STRIPE ────────────────────────────────────────────────
 var STRIPE_PK = 'pk_live_51PLACEHOLDER_REPLACE_WITH_YOUR_KEY';
@@ -1633,24 +1652,6 @@ calcTotal();
 initOperator();
 window.scrollTo(0,0);
 </script>
-
-<!-- OPERATOR NAME MODAL -->
-<div id="opOverlay" class="op-overlay" style="display:none">
-  <div class="op-modal">
-    <div class="op-logo">⚓</div>
-    <div class="op-title">Who's at the desk?</div>
-    <div class="op-sub">Tap your name — it'll be recorded on every transaction</div>
-    <div class="op-btns" id="opBtns">
-      <button class="op-btn" onclick="selectOp(this,'Robin')">Robin</button>
-      <button class="op-btn" onclick="selectOp(this,'Rick')">Rick</button>
-      <button class="op-btn" onclick="selectOp(this,'Joe')">Joe</button>
-      <button class="op-btn" onclick="selectOp(this,'Jeff')">Jeff</button>
-    </div>
-    <div class="op-or">— or enter a name —</div>
-    <input class="op-custom" id="opCustom" type="text" placeholder="Custom name…" oninput="selectOpCustom(this)" autocomplete="off" maxlength="40">
-    <button class="op-go" id="opGo" onclick="confirmOp()" disabled>Let's Go →</button>
-  </div>
-</div>
 
 </body>
 </html>
