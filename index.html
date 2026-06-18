@@ -790,7 +790,25 @@ async function syncToScoring() {
     setTimeout(function(){ btn.innerHTML='⚡ Sync Scoring'; btn.disabled=false; }, 3000);
   }
 }
-
+async function toggleRosterDiv(id, div) {
+  var entry = roster.find(function(e){ return e.id === id; });
+  if (!entry) return;
+  var divArr = parseDivs(entry.divisions || entry.divisionsComp);
+  var idx = divArr.indexOf(div);
+  if (idx !== -1) divArr.splice(idx, 1);
+  else divArr.push(div);
+  entry.divisions = divArr.join(',');
+  renderRoster();
+  try {
+    var resp = await fetch('/.netlify/functions/save-boat-divisions', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({cognitoEntryId: id, divisions: divArr})
+    });
+    var data = await resp.json();
+    if (!data.success) console.warn('save-boat-divisions failed:', data.error);
+  } catch(err) { console.warn('save-boat-divisions error:', err.message); }
+}
 async function loadRoster() {
   var btn = document.getElementById('reloadBtn');
   btn.disabled = true;
@@ -865,7 +883,10 @@ function renderRoster() {
   tbody.innerHTML = filtered.map(function(e) {
     var isCI = !!checkedIn[e.id];
     var divArr = parseDivs(e.divisions || e.divisionsComp);
-    var divHtml = divArr.map(function(d){ return '<span class="div-pill div-'+d[0]+'">'+d+'</span>'; }).join('');
+   var divHtml = ['Inshore','Offshore','Tarpon'].map(function(d){
+  var on = divArr.indexOf(d) !== -1;
+  return '<button onclick="toggleRosterDiv('+e.id+',\''+d+'\')" style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:\'Barlow Condensed\',sans-serif;cursor:pointer;border:1.5px solid '+(on?'#1d4ed8':'#ccc')+';background:'+(on?'#dbeafe':'#f7f9ff')+';color:'+(on?'#1d4ed8':'#aaa')+'">'+d+'</button>';
+}).join('');
     var typeBadge = e.isBoat ? '<span class="boat-badge">🚤 Boat</span>'
       : (e.sponsor ? '<span class="comp-badge">🎁 Comp</span>' : '<span class="ticket-badge">🎟 Tickets</span>');
     var paid = e.amountPaid > 0 ? '$'+e.amountPaid.toFixed(0) : '<span style="color:var(--mid)">Comp</span>';
