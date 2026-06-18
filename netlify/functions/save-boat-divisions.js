@@ -13,7 +13,7 @@ exports.handler = async function(event) {
     var { error } = await sb
       .from("boats")
       .update({ divisions: divisions })
-      .eq("cognito_entry_id", cognitoEntryId.toString());
+      .eq("id", "cognito-" + cognitoEntryId.toString().padStart(3, "0"));
     if (error) throw error;
     return { statusCode: 200, headers: {"Content-Type":"application/json"}, body: JSON.stringify({ success: true }) };
   } catch(err) {
