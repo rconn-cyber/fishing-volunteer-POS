@@ -14,7 +14,7 @@
  *
  * Env vars required (Netlify site settings for rough-riders-fishing-scoring):
  *   COGNITO_API_KEY       — already set
- *   SUPABASE_URL          — https://qyoqyeaqacdjstvkonwx.supabase.co
+*    SUPABASE_URL          — set in Netlify environment variables
  *   SUPABASE_SERVICE_KEY  — service_role secret key
  */
 
