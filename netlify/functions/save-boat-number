@@ -22,7 +22,7 @@ exports.handler = async function (event) {
     var { error } = await sb
       .from("boats")
       .update({ boat_number: boatNumber || null })
-      .eq("cognito_entry_id", cognitoEntryId.toString());
+      .eq("id", "cognito-" + cognitoEntryId.toString().padStart(3, "0"));
 
     if (error) throw error;
 
