@@ -932,6 +932,7 @@ function toggleCIMob(id) {
 function setBoatNum(id, val) {
   var entry = roster.find(function(e){return e.id===id;});
   if (entry) entry.boatNumber = val;
+  fetch('/.netlify/functions/save-boat-number', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cognitoEntryId:id,boatNumber:val})}).catch(function(e){console.warn('boat# save failed:',e);});
 }
 
 // ── SELECT (desktop) ──────────────────────────────────────
