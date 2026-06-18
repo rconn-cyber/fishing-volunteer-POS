@@ -381,6 +381,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
         Refresh
       </button>
       <button class="walkup-btn" onclick="startWalkup()" title="Register a new boat or ticket buyer not in the system">＋ Walk-Up</button>
+<button class="reload-btn" id="syncScoringBtn" onclick="syncToScoring()" title="Push division/boat number changes to scoring app">⚡ Sync Scoring</button>
     </div>
   </div>
 
@@ -770,6 +771,26 @@ function mobNav(view) {
 }
 
 // ── LOAD ROSTER ───────────────────────────────────────────
+async function syncToScoring() {
+  var btn = document.getElementById('syncScoringBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Syncing…';
+  try {
+    var resp = await fetch('/.netlify/functions/sync-cognito-boats', {method:'POST'});
+    var data = await resp.json();
+    if (data.success) {
+      btn.textContent = '✓ Synced ' + (data.upserted||0);
+      setTimeout(function(){ btn.innerHTML='⚡ Sync Scoring'; btn.disabled=false; }, 3000);
+    } else {
+      btn.textContent = '⚠ Failed';
+      setTimeout(function(){ btn.innerHTML='⚡ Sync Scoring'; btn.disabled=false; }, 3000);
+    }
+  } catch(err) {
+    btn.textContent = '⚠ Error';
+    setTimeout(function(){ btn.innerHTML='⚡ Sync Scoring'; btn.disabled=false; }, 3000);
+  }
+}
+
 async function loadRoster() {
   var btn = document.getElementById('reloadBtn');
   btn.disabled = true;
