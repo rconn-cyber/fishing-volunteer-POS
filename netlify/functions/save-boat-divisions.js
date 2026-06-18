@@ -1,21 +1,44 @@
-const { createClient } = require("@supabase/supabase-js");
-const sb = createClient(
-  "https://qyoqyeaqacdjstvkonwx.supabase.co",
-  process.env.SUPABASE_SERVICE_KEY
-);
+const https = require('https');
+
+function supabasePatch(supabaseUrl, serviceKey, table, body, filter) {
+  return new Promise((resolve, reject) => {
+    const bodyStr = JSON.stringify(body);
+    const options = {
+      hostname: supabaseUrl.replace('https://','').split('/')[0],
+      path: '/rest/v1/' + table + '?' + filter,
+      method: 'PATCH',
+      headers: {
+        'Content-Type':   'application/json',
+        'Content-Length': Buffer.byteLength(bodyStr),
+        'apikey':          serviceKey,
+        'Authorization':  'Bearer ' + serviceKey,
+        'Prefer':          'return=representation',
+      },
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, data }));
+    });
+    req.on('error', reject);
+    req.write(bodyStr);
+    req.end();
+  });
+}
 
 exports.handler = async function(event) {
-  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY;
   try {
     var body = JSON.parse(event.body);
-    var { cognitoEntryId, divisions } = body;
-    if (!cognitoEntryId) return { statusCode: 400, body: JSON.stringify({ success: false, error: "Missing cognitoEntryId" }) };
-    var { error } = await sb
-      .from("boats")
-      .update({ divisions: divisions })
-      .eq("id", "cognito-" + cognitoEntryId.toString().padStart(3, "0"));
-    if (error) throw error;
-    return { statusCode: 200, headers: {"Content-Type":"application/json"}, body: JSON.stringify({ success: true }) };
+    var cognitoEntryId = body.cognitoEntryId;
+    var divisions = body.divisions;
+    if (!cognitoEntryId) return { statusCode: 400, body: JSON.stringify({ success: false, error: 'Missing cognitoEntryId' }) };
+    var id = 'cognito-' + cognitoEntryId.toString().padStart(3, '0');
+    var result = await supabasePatch(SUPABASE_URL, SERVICE_KEY, 'boats', { divisions: divisions }, 'id=eq.' + id);
+    if (!result.ok) throw new Error('Supabase error ' + result.status + ': ' + result.data);
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) };
   } catch(err) {
     return { statusCode: 500, body: JSON.stringify({ success: false, error: err.message }) };
   }
