@@ -334,6 +334,25 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--dark);min-
   .main-col.mob-hidden{display:block!important}
 }
 </style>
+  </style>
+<script>
+// ── PASSWORD GATE ────────────────────────────────────────────────
+(function () {
+  const PASS = 'bullyjudge';
+  if (sessionStorage.getItem('pos_auth') !== PASS) {
+    const input = prompt('Rough Riders POS — Enter password:');
+    if (input !== PASS) {
+      document.documentElement.innerHTML =
+        '<body style="font-family:sans-serif;display:flex;align-items:center;' +
+        'justify-content:center;height:100vh;margin:0;background:#0d1f3c;color:#fff">' +
+        '<p style="font-size:1.4rem">Access denied.</p></body>';
+      throw new Error('Access denied');
+    }
+    sessionStorage.setItem('pos_auth', PASS);
+  }
+})();
+// ─────────────────────────────────────────────────────────────────
+</script>
 </head>
 <body>
 
